@@ -1,6 +1,0 @@
-C:\Programming\Programs\C#\Console-WPF\Freelance\AlibabaData\AlData\bin\Debug\AlData.exe.config
-C:\Programming\Programs\C#\Console-WPF\Freelance\AlibabaData\AlData\bin\Debug\AlData.exe
-C:\Programming\Programs\C#\Console-WPF\Freelance\AlibabaData\AlData\bin\Debug\AlData.pdb
-C:\Programming\Programs\C#\Console-WPF\Freelance\AlibabaData\AlData\obj\Debug\AlData.csprojResolveAssemblyReference.cache
-C:\Programming\Programs\C#\Console-WPF\Freelance\AlibabaData\AlData\obj\Debug\AlData.exe
-C:\Programming\Programs\C#\Console-WPF\Freelance\AlibabaData\AlData\obj\Debug\AlData.pdb

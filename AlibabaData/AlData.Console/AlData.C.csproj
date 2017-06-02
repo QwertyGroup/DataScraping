@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{8519FE50-C0D6-4C33-880F-2EB518E0FD94}</ProjectGuid>
+    <ProjectGuid>{D29D0C18-45A0-4969-A184-958E3F6773D3}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>AlData</RootNamespace>
-    <AssemblyName>AlData</AssemblyName>
+    <RootNamespace>AlData.Console</RootNamespace>
+    <AssemblyName>AlData.Console</AssemblyName>
     <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
