@@ -20,7 +20,25 @@ namespace HtmlAgilityTesting
 
             //GetCLinks();
 
+            LoadFromPage(1);
+
             Console.ReadLine();
+        }
+
+        private static async void LoadFromPage(int page)
+        {
+            var name_link = File.ReadAllLines($"RawLinks/CLinks{page}.txt").ToList();
+            var names = name_link.Select(nl => nl.SplitBy("->")[0].Trim()).ToList();
+            var links = name_link.Select(nl => nl.SplitBy("->")[1].Trim()).ToList();
+
+            foreach (var link in links)
+            {
+                var client = new HttpClient();
+                var data = await client.GetStringAsync(link);
+                var doc = new HtmlDocument();
+                doc.LoadHtml(data);
+                // ЫЫ
+            }
         }
 
         private static Random _rnd = new Random();
@@ -187,6 +205,14 @@ namespace HtmlAgilityTesting
             }
             Console.WriteLine($"{Environment.NewLine}Total: {compNodes.Count}");
             Console.WriteLine($"Time consumed: {sw.Elapsed}");
+        }
+    }
+
+    internal static class StringExt
+    {
+        public static List<string> SplitBy(this string tString, string splitString)
+        {
+            return tString.Split(new string[] { splitString }, StringSplitOptions.RemoveEmptyEntries).ToList();
         }
     }
 }
