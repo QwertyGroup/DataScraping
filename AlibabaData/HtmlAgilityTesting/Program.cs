@@ -85,7 +85,7 @@ namespace HtmlAgilityTesting
             // UNCOMMENT
             var sw = new Stopwatch(); sw.Start();
             var files = Directory.GetFiles("Bikes/AllBikes");
-            var counter = 0;
+            var counter = 5;
             foreach (var file in files)
             //var file = files[1];
             {
@@ -102,6 +102,7 @@ namespace HtmlAgilityTesting
                 {
                     var lsw = new Stopwatch(); lsw.Start();
                     var specs = await DownloadEM(model.link);
+                    if (specs == null) { Console.WriteLine("C-cracked"); ; continue; }
                     File.AppendAllLines(path + counter + ".txt", new[] { new string('-', 16), model.name });
                     File.AppendAllLines(path + counter + ".txt", specs.Select(sp => $"{sp.key} -> {sp.val}"));
                     File.AppendAllLines(path + counter + ".txt", new[] { Environment.NewLine });
@@ -120,23 +121,32 @@ namespace HtmlAgilityTesting
 
         private static async Task<List<(string key, string val)>> DownloadEM(string url)
         {
-            var doc = await GetHTMLDoc(url);
-            var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table//tr");
-            var node = doc.DocumentNode;
-            var t1 = node.SelectNodes("//td[1]").Select(x => x.InnerText).ToList();
-            t1.RemoveRange(0, t1.IndexOf("Model:"));
-            t1.RemoveRange(t1.IndexOf("Insurance costs"), t1.Count - t1.IndexOf("Insurance costs")); // FIXX!!!!!!!!!!!!
-
-            var t2 = node.SelectNodes("//tr").ToList();
-            var t3 = t2.Where(nd =>
+            try
             {
-                if (nd.ChildNodes.Count > 1)
-                    if (t1.Contains(nd.ChildNodes[0].InnerText))
-                        return true;
-                return false;
-            }).Select(nd => nd.ChildNodes[1].InnerText).ToList();
+                var doc = await GetHTMLDoc(url);
+                var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table//tr");
+                var node = doc.DocumentNode;
+                var t1 = node.SelectNodes("//td[1]").Select(x => x.InnerText).ToList();
+                t1.RemoveRange(0, t1.IndexOf("Model:"));
+                t1.RemoveRange(t1.IndexOf("Insurance costs"), t1.Count - t1.IndexOf("Insurance costs")); // FIXX!!!!!!!!!!!!
 
-            return t1.Zip(t3, (k, v) => (k, v)).ToList();
+                var t2 = node.SelectNodes("//tr").ToList();
+                var t3 = t2.Where(nd =>
+                {
+                    if (nd.ChildNodes.Count > 1)
+                        if (t1.Contains(nd.ChildNodes[0].InnerText))
+                            return true;
+                    return false;
+                }).Select(nd => nd.ChildNodes[1].InnerText).ToList();
+
+                return t1.Zip(t3, (k, v) => (k, v)).ToList();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                File.AppendAllText(BikesDir + "crackedPages.txt", url + Environment.NewLine);
+                return null;
+            }
         }
 
         private static async void GatherAllBiLinks(List<(string Name, string Link)> validPairs)
