@@ -20,24 +20,224 @@ namespace HtmlAgilityTesting
 
             //GetCLinks();
 
-            LoadFromPage(1);
+            //LoadFromPage(1);
+
+            //Test404();
+
+            BikesStart();
 
             Console.ReadLine();
         }
 
+        private static string BikesDir
+        {
+            get
+            {
+                var dir = "Bikes/";
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                return dir;
+            }
+        }
+
+        private static async void BikesStart()
+        {
+            // http://bikez.com/brands/index.php
+
+            // Aprilia motorcycles
+            // ATK motorcycles
+            // Bajaj motorcycles
+            // Benelli motorcycles
+            // Bimota motorcycles
+            // BMW motorcycles
+            // Cagiva motorcycles
+            // CCM motorcycles
+            // Ducati motorcycles
+            // Enfield motorcycles
+            // GAS GAS motorcycles
+            // Gilera motorcycles
+            // Harley-Davidson motorcycles
+            // Honda motorcycles
+            // Indian motorcycles
+            // Kawasaki motorcycles
+            // Keeway motorcycles
+            // KTM motorcycles
+            // Kymco motorcycles
+            // MV Agusta motorcycles
+            // Peugeot motorcycles
+            // PGO motorcycles
+            // Piaggio motorcycles
+            // Suzuki motorcycles
+            // Triumph motorcycles
+            // Ural motorcycles
+            // Vespa motorcycles
+            // Victory motorcycles
+            // Yamaha motorcycles
+
+            // I would need all attributes except "further information" 
+            // and I would just need a number of brands, not all 
+
+            // --------------------------------------------------------
+
+            // Interface
+
+            var validPairs = await GetAllBrandsTxt();
+            GatherAllBiLinks(validPairs);
+
+            // ---------
+        }
+
+        private static async void GatherAllBiLinks(List<(string Name, string Link)> validPairs)
+        {
+            var Total = 0;
+            var sw = new Stopwatch();
+            sw.Start();
+            foreach (var pair in validPairs)
+            {
+                var maxPage = await GetMaxPage(pair.Link);
+
+                var BrandBikes = new List<(string Model, string Link)>();
+                for (int pn = 1; pn <= maxPage; pn++)
+                {
+                    var doc = await GetHTMLDoc(pair.Link + $"?page={pn}");
+                    var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr//td[1]/a");
+                    List<(string Model, string Link)> bikes =
+                        nodes.Select(node => (node.InnerText, node.GetAttributeValue("href", "def link"))).
+                        Where(node => node.Item2 != "def link").
+                        Select(node => (node.Item1.Trim(), ("http://bikez.com" + node.Item2.Remove(0, 2)).Trim())).ToList();
+
+                    bikes = bikes.Where(bike => (bike.Model != string.Empty && bike.Model != "\r\n"
+                    && !bike.Model.Contains("&lt;&lt;") && !bike.Model.Contains("http://"))).ToList();
+
+                    for (int i = 0; i < maxPage; i++)
+                        bikes.RemoveAt(bikes.Count - 1);
+
+                    BrandBikes.AddRange(bikes);
+                    Console.WriteLine($"{pair.Name}: {pn} of {maxPage}");
+                }
+
+                File.WriteAllLines($"{DirChecker($"{BikesDir}AllBikes/")}{pair.Name}.txt",
+                    BrandBikes.Select(bike => $"{bike.Model} -> {bike.Link}"));
+                Console.WriteLine($"{pair.Name} ::done. Count: {BrandBikes.Count}{Environment.NewLine}");
+                Total += BrandBikes.Count;
+                await Task.Delay(3200);
+            }
+            sw.Stop();
+            Console.WriteLine($"All done! Total: {Total}; Time: {sw.Elapsed}");
+        }
+
+        private static string DirChecker(string dir)
+        {
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            return dir;
+        }
+
+        private static async Task<int> GetMaxPage(string link)
+        {
+            // if null then 1
+            // //*[@id="pagecontent"]/table[3]/tr[122]/td/a[6]
+            var doc = await GetHTMLDoc(link);
+            var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr//td/a");
+            if (nodes == null) return 1;
+            var pages = nodes.Select(node => node.InnerText).ToList();
+            var maxPage = 1;
+            Int32.TryParse(pages[pages.Count - 2], out maxPage); // Convert.ToInt32(pages[pages.Count - 2]);
+            return maxPage;
+        }
+
+        private static async Task<List<(string Name, string Link)>> GetAllBrandsTxt()
+        {
+            var doc = await GetHTMLDoc("http://bikez.com/brands/index.php");
+            List<(string Name, string Link)> pairs = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr[1]/td[1]/table/tr//td[1]/a").
+                Select(node => (node.InnerText, node.GetAttributeValue("href", "def link"))).
+                Where(node => node.Item2 != "def link").Select(node => (node.Item1, "http://bikez.com" + node.Item2)).
+                ToList();
+
+            File.WriteAllLines($"{BikesDir}AllBrands.txt", pairs.Select(pair => $"{pair.Name} -> {pair.Link}"));
+
+            var validNames = File.ReadAllLines($"{BikesDir}ValidNames.txt").ToList();
+            List<(string Name, string Link)> validParis = pairs.Where(pair => validNames.Contains(pair.Name)).ToList();
+            File.WriteAllLines($"{BikesDir}ValidBrands.txt", validParis.Select(pair => $"{pair.Name} -> {pair.Link}"));
+
+            Console.WriteLine("Got Brands.");
+            return validParis;
+        }
+
+        private static int DelayMs { get { return _rnd.Next(800) + 500; } }
+        private static async Task<HtmlDocument> GetHTMLDoc(string url)
+        {
+            var client = new HttpClient();
+            var data = string.Empty;
+            try
+            {
+                data = await client.GetStringAsync(url);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Console.WriteLine(ex.Message);
+            }
+            var doc = new HtmlDocument();
+            doc.LoadHtml(data);
+            await Task.Delay(DelayMs);
+            return doc;
+        }
+
+        private static async void Test404()
+        {
+            var client = new HttpClient();
+            var data = await client.GetStringAsync(" https://www.cnet.com/products/lenovo-thinkpad-t460p-20fw-14-core-i7-6820hq-16-gb-ram-512kek-gb-ssd/");
+        }
+
         private static async void LoadFromPage(int page)
         {
-            var name_link = File.ReadAllLines($"RawLinks/CLinks{page}.txt").ToList();
-            var names = name_link.Select(nl => nl.SplitBy("->")[0].Trim()).ToList();
-            var links = name_link.Select(nl => nl.SplitBy("->")[1].Trim()).ToList();
-
-            foreach (var link in links)
+            List<(string Name, string Link)> nlpairs =
+                File.ReadAllLines($"RawLinks/CLinks{page}.txt").Select(nl =>
             {
+                var spl = nl.SplitBy("->");
+                return (spl[0].Trim(), spl[1].Trim());
+            }).ToList();
+
+            foreach (var nlpair in nlpairs)
+            {
+                var dir = "TestProps";
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
                 var client = new HttpClient();
-                var data = await client.GetStringAsync(link);
                 var doc = new HtmlDocument();
+                var data = string.Empty;
+                try
+                {
+                    data = await client.GetStringAsync(nlpair.Link);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    continue;
+                }
+
                 doc.LoadHtml(data);
-                // ЫЫ
+                var xpath = "//*[@id=\"editorReview\"]/ul";
+                HtmlNode st = null;
+                try
+                {
+                    st = doc.DocumentNode.SelectNodes(xpath)[0];
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                    Console.WriteLine($"{nlpair.Name} :: null");
+                    File.AppendAllText($"{dir}/null{page}.txt", nlpair.Name + " -> " + nlpair.Link + Environment.NewLine);
+                    continue;
+                }
+
+                var props = st.ChildNodes.Select(node => node.InnerText).ToList();
+
+                props.Insert(0, Environment.NewLine + nlpair.Name);
+
+                File.AppendAllLines($"{dir}/page{page}.txt", props);
+
+                await Task.Delay(_rnd.Next(1000) + 1000);
+                Console.WriteLine(nlpair.Name + " done.");
             }
         }
 
