@@ -79,11 +79,64 @@ namespace HtmlAgilityTesting
             // --------------------------------------------------------
 
             // Interface
+            //var test = await DownloadEM("http://bikez.com/motorcycles/bmw_kompressor_1939.php");
+            //var validPairs = await GetAllBrandsTxt();
+            //GatherAllBiLinks(validPairs);
+            // UNCOMMENT
+            var sw = new Stopwatch(); sw.Start();
+            var files = Directory.GetFiles("Bikes/AllBikes");
+            var counter = 0;
+            foreach (var file in files)
+            //var file = files[1];
+            {
+                var fTime = new TimeSpan();
+                var path = DirChecker(BikesDir + "Specs/");
+                List<(string name, string link)> models = File.ReadAllLines(file).Select(str =>
+                {
+                    var spl = str.SplitBy("->");
+                    return (spl[0].Trim(), spl[1].Trim());
+                }).ToList();
 
-            var validPairs = await GetAllBrandsTxt();
-            GatherAllBiLinks(validPairs);
+                var localCounter = 0;
+                foreach (var model in models)
+                {
+                    var lsw = new Stopwatch(); lsw.Start();
+                    var specs = await DownloadEM(model.link);
+                    File.AppendAllLines(path + counter + ".txt", new[] { new string('-', 16), model.name });
+                    File.AppendAllLines(path + counter + ".txt", specs.Select(sp => $"{sp.key} -> {sp.val}"));
+                    File.AppendAllLines(path + counter + ".txt", new[] { Environment.NewLine });
+                    localCounter++;
+                    lsw.Stop();
+                    fTime = fTime.Add(lsw.Elapsed);
+                    Console.WriteLine($"{model.name} done. {localCounter} of {models.Count}. LTime: {lsw.Elapsed}. TTime: {sw.Elapsed}.");
+                }
 
-            // ---------
+                counter++;
+                Console.WriteLine($"{Environment.NewLine}>>_ {file} done. {counter} of {files.ToList().Count}. FTime: {fTime}{Environment.NewLine}{Environment.NewLine}");
+            }
+            sw.Stop();
+            Console.WriteLine($"ALL done! Time: {sw.Elapsed}");
+        }
+
+        private static async Task<List<(string key, string val)>> DownloadEM(string url)
+        {
+            var doc = await GetHTMLDoc(url);
+            var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table//tr");
+            var node = doc.DocumentNode;
+            var t1 = node.SelectNodes("//td[1]").Select(x => x.InnerText).ToList();
+            t1.RemoveRange(0, t1.IndexOf("Model:"));
+            t1.RemoveRange(t1.IndexOf("Insurance costs"), t1.Count - t1.IndexOf("Insurance costs")); // FIXX!!!!!!!!!!!!
+
+            var t2 = node.SelectNodes("//tr").ToList();
+            var t3 = t2.Where(nd =>
+            {
+                if (nd.ChildNodes.Count > 1)
+                    if (t1.Contains(nd.ChildNodes[0].InnerText))
+                        return true;
+                return false;
+            }).Select(nd => nd.ChildNodes[1].InnerText).ToList();
+
+            return t1.Zip(t3, (k, v) => (k, v)).ToList();
         }
 
         private static async void GatherAllBiLinks(List<(string Name, string Link)> validPairs)
@@ -119,7 +172,7 @@ namespace HtmlAgilityTesting
                     BrandBikes.Select(bike => $"{bike.Model} -> {bike.Link}"));
                 Console.WriteLine($"{pair.Name} ::done. Count: {BrandBikes.Count}{Environment.NewLine}");
                 Total += BrandBikes.Count;
-                await Task.Delay(3200);
+                await Task.Delay(2200);
             }
             sw.Stop();
             Console.WriteLine($"All done! Total: {Total}; Time: {sw.Elapsed}");
@@ -139,8 +192,7 @@ namespace HtmlAgilityTesting
             var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr//td/a");
             if (nodes == null) return 1;
             var pages = nodes.Select(node => node.InnerText).ToList();
-            var maxPage = 1;
-            Int32.TryParse(pages[pages.Count - 2], out maxPage); // Convert.ToInt32(pages[pages.Count - 2]);
+            if (!Int32.TryParse(pages[pages.Count - 2], out int maxPage)) return 1; // Convert.ToInt32(pages[pages.Count - 2]);
             return maxPage;
         }
 
@@ -162,7 +214,7 @@ namespace HtmlAgilityTesting
             return validParis;
         }
 
-        private static int DelayMs { get { return _rnd.Next(800) + 500; } }
+        private static int DelayMs { get { return _rnd.Next(500) + 300; } }
         private static async Task<HtmlDocument> GetHTMLDoc(string url)
         {
             var client = new HttpClient();
@@ -236,7 +288,7 @@ namespace HtmlAgilityTesting
 
                 File.AppendAllLines($"{dir}/page{page}.txt", props);
 
-                await Task.Delay(_rnd.Next(1000) + 1000);
+                await Task.Delay(_rnd.Next(800) + 600);
                 Console.WriteLine(nlpair.Name + " done.");
             }
         }
@@ -337,7 +389,7 @@ namespace HtmlAgilityTesting
             HtmlDocument doc = await GetDoc(pageNum);
 
             var xpath = "//*[@id=\"dfllResults\"]/div//section//div[2]/a"; // xpath: //*[@id=\"dfllResults\"]/div[1]/section[3]/div[2]/a
-            // //*[@id=\"dfllResults\"]/div//section//div//a
+                                                                           // //*[@id=\"dfllResults\"]/div//section//div//a
             var cnodes = doc.DocumentNode.SelectNodes(xpath);
             var clinks = new List<(string Link, string Model)>();
             foreach (var cnode in cnodes)
