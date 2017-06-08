@@ -18,15 +18,94 @@ namespace HtmlAgilityTesting
 
             //GenPageList();
 
-            //GetCLinks();
+            //GetCLinks(); 
 
             //LoadFromPage(1);
 
             //Test404();
 
-            BikesStart();
+            //BikesStart();
+
+            //CountModels();
+
+            //GetAllFields();
 
             Console.ReadLine();
+        }
+
+        private static void CountModels()
+        {
+            var data = File.ReadAllLines($"{BikesDir}Specs/kwsk2.txt");
+            var counter = 0;
+            foreach (var line in data)
+            {
+                if (line.Contains(new string('-', 16)))
+                    //if (line.Contains("->"))
+                    counter++;
+            }
+            Console.WriteLine(counter);
+        }
+
+        private static void GetAllFields()
+        {
+            var files = Directory.GetFiles("Bikes/NEW/");
+            var fields = new Dictionary<string, int>();
+            foreach (var file in files)
+            {
+                var data = File.ReadAllLines(file).ToList();
+                data = data.Where(line => line.Contains("->")).ToList();
+                foreach (var d in data)
+                {
+                    var f = d.SplitBy("->")[0].Trim();
+                    f = f.Substring(0, f.Length - 1);
+                    if (!fields.Keys.Contains(f)) fields.Add(f, 1);
+                    else fields[f]++;
+                }
+            }
+
+            List<(string key, int val)> flds = fields.OrderBy(f => f.Value).Select(f => (f.Key, f.Value)).Reverse().ToList();
+
+            File.WriteAllLines($"{BikesDir}Fields.txt", fields.Keys);
+            Console.WriteLine("Fields done!");
+
+            var fieldsDict = new Dictionary<string, string>();
+            foreach (var k in flds.Select(x => x.key).ToList())
+                fieldsDict.Add(k, string.Empty);
+
+            var ListOfEverything = new List<Dictionary<string, string>>();
+            foreach (var file in files)
+            {
+
+                var data = File.ReadAllLines(file).ToList();
+                for (int i = 0; i < data.Count; i++)
+                {
+                    var line = data[i];
+                    if (line == new string('-', 16))
+                    {
+                        ListOfEverything.Add(new Dictionary<string, string>(fieldsDict));
+                        continue;
+                    }
+                    if (!line.Contains("->")) continue;
+                    var spl = line.SplitBy(" -> ");
+                    if (spl.Count < 2) continue;
+                    ListOfEverything.Last()[spl[0]] = spl[1];
+                }
+            }
+
+            File.WriteAllText($"{BikesDir}ListOfEverything.csv", new Func<string>(() =>
+            {
+                var row = flds.Select(kv => kv.key).Aggregate((acc, k) => acc += $"{k}|");
+                return row.Remove(row.Length - 1, 1);
+            }).Invoke());
+
+            File.AppendAllLines($"{BikesDir}ListOfEverything.csv", ListOfEverything.Select(line =>
+            {
+                var row = line.Select(kv => kv.Value).Aggregate((acc, field) => acc += $"{field}|");
+                return row.Remove(row.Length - 1, 1);
+            }
+            ).ToList());
+
+            Console.WriteLine("All DONE!");
         }
 
         private static string BikesDir
@@ -85,19 +164,22 @@ namespace HtmlAgilityTesting
             // UNCOMMENT
             var sw = new Stopwatch(); sw.Start();
             var files = Directory.GetFiles("Bikes/AllBikes");
-            var counter = 5;
-            foreach (var file in files)
+            var counter = 0;
+            //foreach (var file in files)
+            //var file = $"{BikesDir}crackedPages.txt";
+            var file = $"{BikesDir}CP.txt";
             //var file = files[1];
             {
                 var fTime = new TimeSpan();
                 var path = DirChecker(BikesDir + "Specs/");
-                List<(string name, string link)> models = File.ReadAllLines(file).Select(str =>
-                {
-                    var spl = str.SplitBy("->");
-                    return (spl[0].Trim(), spl[1].Trim());
-                }).ToList();
+                //List<(string name, string link)> models = File.ReadAllLines(file).Select(str =>
+                //{
+                //    var spl = str.SplitBy("->");
+                //    return (spl[0].Trim(), spl[1].Trim());
+                //}).ToList();
 
                 var localCounter = 0;
+                List<(string name, string link)> models = File.ReadAllLines(file).Select(x => ("CRCD", x)).ToList();
                 foreach (var model in models)
                 {
                     var lsw = new Stopwatch(); lsw.Start();
@@ -128,7 +210,15 @@ namespace HtmlAgilityTesting
                 var node = doc.DocumentNode;
                 var t1 = node.SelectNodes("//td[1]").Select(x => x.InnerText).ToList();
                 t1.RemoveRange(0, t1.IndexOf("Model:"));
-                t1.RemoveRange(t1.IndexOf("Insurance costs"), t1.Count - t1.IndexOf("Insurance costs")); // FIXX!!!!!!!!!!!!
+                try // ыы
+                {
+                    t1.RemoveRange(t1.IndexOf("Insurance costs"), t1.Count - t1.IndexOf("Insurance costs"));
+                }
+                catch
+                {
+                    Console.WriteLine("processing craked");
+                    t1.RemoveRange(t1.IndexOf("Ask questions"), t1.Count - t1.IndexOf("Ask questions"));
+                }
 
                 var t2 = node.SelectNodes("//tr").ToList();
                 var t3 = t2.Where(nd =>
@@ -162,17 +252,25 @@ namespace HtmlAgilityTesting
                 for (int pn = 1; pn <= maxPage; pn++)
                 {
                     var doc = await GetHTMLDoc(pair.Link + $"?page={pn}");
-                    var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr//td[1]/a");
+                    //var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr//td[1]/a");
+                    var nodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr//td//a");
+                    //var testnodes = doc.DocumentNode.SelectNodes("//*[@id=\"pagecontent\"]/table[3]/tr//td//a");
+                    //var testbikes = testnodes.Select(x => x.InnerHtml).ToList();//.Where(x => !x.Contains("img")).ToList();
+                    // //*[@id="pagecontent"]/table[3]/tbody/tr[16]/td
                     List<(string Model, string Link)> bikes =
                         nodes.Select(node => (node.InnerText, node.GetAttributeValue("href", "def link"))).
-                        Where(node => node.Item2 != "def link").
+                        Where(node => node.Item2 != "def link" && !node.Item1.Contains("<img src=")).
                         Select(node => (node.Item1.Trim(), ("http://bikez.com" + node.Item2.Remove(0, 2)).Trim())).ToList();
 
                     bikes = bikes.Where(bike => (bike.Model != string.Empty && bike.Model != "\r\n"
                     && !bike.Model.Contains("&lt;&lt;") && !bike.Model.Contains("http://"))).ToList();
 
-                    for (int i = 0; i < maxPage; i++)
-                        bikes.RemoveAt(bikes.Count - 1);
+                    if (pn == maxPage)
+                        for (int i = 0; i < maxPage - 1; i++)
+                            bikes.RemoveAt(bikes.Count - 1);
+                    else
+                        for (int i = 0; i < maxPage; i++)
+                            bikes.RemoveAt(bikes.Count - 1);
 
                     BrandBikes.AddRange(bikes);
                     Console.WriteLine($"{pair.Name}: {pn} of {maxPage}");
@@ -182,7 +280,7 @@ namespace HtmlAgilityTesting
                     BrandBikes.Select(bike => $"{bike.Model} -> {bike.Link}"));
                 Console.WriteLine($"{pair.Name} ::done. Count: {BrandBikes.Count}{Environment.NewLine}");
                 Total += BrandBikes.Count;
-                await Task.Delay(2200);
+                await Task.Delay(200);
             }
             sw.Stop();
             Console.WriteLine($"All done! Total: {Total}; Time: {sw.Elapsed}");
@@ -224,7 +322,7 @@ namespace HtmlAgilityTesting
             return validParis;
         }
 
-        private static int DelayMs { get { return _rnd.Next(500) + 300; } }
+        private static int DelayMs { get { return _rnd.Next(200) + 200; } }
         private static async Task<HtmlDocument> GetHTMLDoc(string url)
         {
             var client = new HttpClient();
