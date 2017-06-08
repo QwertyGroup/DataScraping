@@ -6,27 +6,24 @@ using System.Threading.Tasks;
 using System.Net;
 using System.IO;
 using System.Threading;
-
+using HtmlAgilityPack;
 namespace Watches
 {
     class Program
     {
         static void Main(string[] args)
         {
-            //"col-md-12"
-            var myThread = new Thread(Start);
-            myThread.Start();
-            for (;;)
-                Console.WriteLine(5);
+            var task = new Task(Start);
+            task.Start();
+            Console.ReadLine();
         }
 
         static async void Start()
         {
+            Console.WriteLine("Downloading...");
             var page = await GetPageTest(@"http://www.chrono24.com/rolex/daytona-steel--18k-yellow-gold-watch-black-dial--id3259523.htm");
-            foreach (var line in page.Split('\n'))
-            {
-                Console.WriteLine(line);
-            }
+            var table = GetTable(page);
+            Console.WriteLine(table.Split('\n').Length);
         }
 
         static async Task<string> GetPageTest(string url)
@@ -38,6 +35,16 @@ namespace Watches
             page = WebUtility.HtmlDecode(page);
 
             return page;
+        }
+
+        static string GetTable(string htmlPage)
+        {
+            var xpath = "//*[@id=\"anti - flicker\"]/div";
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(htmlPage);
+            var cnodes = doc.DocumentNode.SelectNodes(xpath);
+            Console.WriteLine(cnodes.First().InnerText);
+            return cnodes.First().InnerText;
         }
     }
 }
