@@ -7,6 +7,8 @@ using System.Net;
 using System.IO;
 using System.Threading;
 using HtmlAgilityPack;
+using System.Net.Http;
+
 namespace Watches
 {
     class Program
@@ -21,30 +23,27 @@ namespace Watches
         static async void Start()
         {
             Console.WriteLine("Downloading...");
-            var page = await GetPageTest(@"http://www.chrono24.com/rolex/daytona-steel--18k-yellow-gold-watch-black-dial--id3259523.htm");
+            var page = await GetPage(@"http://www.chrono24.com/rolex/deepsea-d-blue-james-cameron--id4486491.htm");
             var table = GetTable(page);
             Console.WriteLine(table.Split('\n').Length);
         }
 
-        static async Task<string> GetPageTest(string url)
+        static async Task<HtmlDocument> GetPage(string url)
         {
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-            HttpWebResponse res = (HttpWebResponse)await req.GetResponseAsync();
-            StreamReader sr = new StreamReader(res.GetResponseStream());
-            string page = sr.ReadToEnd();
+            var client = new HttpClient();
+            string page = await client.GetStringAsync(url);
             page = WebUtility.HtmlDecode(page);
-
-            return page;
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(page);
+            return doc;
         }
 
-        static string GetTable(string htmlPage)
+        static string GetTable(HtmlDocument doc)
         {
-            var xpath = "//*[@id=\"anti - flicker\"]/div";
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(htmlPage);
-            var cnodes = doc.DocumentNode.SelectNodes(xpath);
-            Console.WriteLine(cnodes.First().InnerText);
-            return cnodes.First().InnerText;
+            var xpath = "//*[@id=\"anti-flicker\"]/div[6]/div/section[2]/div/div[1]/div[1]";
+            var cnodes = doc.DocumentNode.SelectSingleNode(xpath);
+            Console.WriteLine(cnodes.InnerText);
+            return cnodes.InnerText;
         }
     }
 }
