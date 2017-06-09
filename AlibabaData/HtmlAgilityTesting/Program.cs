@@ -88,6 +88,7 @@ namespace HtmlAgilityTesting
                     if (!line.Contains("->")) continue;
                     var spl = line.SplitBy(" -> ");
                     if (spl.Count < 2) continue;
+                    spl[0] = spl[0].Substring(0, spl[0].Length - 1);
                     ListOfEverything.Last()[spl[0]] = spl[1];
                 }
             }
