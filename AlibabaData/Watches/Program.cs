@@ -42,7 +42,6 @@ namespace Watches
         {
             var xpath = "//*[@id=\"anti-flicker\"]/div[6]/div/section[2]/div/div[1]/div[1]";
             var cnodes = doc.DocumentNode.SelectSingleNode(xpath);
-            Console.WriteLine(cnodes.InnerText);
             return cnodes.InnerText;
         }
     }
