@@ -12,7 +12,7 @@ namespace CoreTesting
     {
         static void Main(string[] args)
         {
-            TestBase test = new MultLoadTesting(); // ToolsTesting | AsyncTesting | MultLoadTesting
+            TestBase test = new MultLoadTesting(); // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
             test.Main();
             Console.ReadLine();
         }
@@ -21,6 +21,28 @@ namespace CoreTesting
     abstract class TestBase
     {
         public abstract void Main();
+    }
+
+    class Random_ascii : TestBase
+    {
+        public override void Main()
+        {
+            Console.WriteLine("Random_ascii");
+
+            int asciiCharacterStart = 33; // from which ascii character code the generation should start
+            int asciiCharacterEnd = 175; // to which ascii character code the generation should end
+            int characterCount = 10000; // count of characters to generate
+
+            Random random = new Random(DateTime.Now.Millisecond);
+            StringBuilder builder = new StringBuilder();
+
+            // iterate, get random int between 'asciiCharacterStart' and 'asciiCharacterEnd', then convert it to (char), append to StringBuilder
+            for (int i = 0; i < characterCount; i++)
+                builder.Append((char)(random.Next(asciiCharacterStart, asciiCharacterEnd + 1) % 255));
+
+            // voila!
+            String text = builder.ToString();
+        }
     }
 
     class MultLoadTesting : TestBase

@@ -34,14 +34,14 @@ namespace BigDataCore
 
         public async Task<HtmlDocument> DownloadDocAsync(string url, int sleep_ms = 0)
         {
-            return (await DownloadMultipleDocsAsync(new List<string> { url }, sleep_ms)).First();
+            var doc = (await DownloadMultipleDocsAsync(new List<string> { url }, sleep_ms)).First();
+            if (sleep_ms != 0) await Task.Delay(sleep_ms);
+            return doc;
         }
 
         public async Task<List<HtmlDocument>> DownloadMultipleDocsAsync(List<string> urls, int sleep_ms = 0)
         {
-            var docs = await new DocsLoader(urls).DownloadDocsAsync();
-            if (sleep_ms != 0) await Task.Delay(sleep_ms);
-            return docs;
+            return await new DocsLoader(urls).DownloadDocsAsync(sleep_ms);
         }
 
         private class DocsLoader
@@ -57,12 +57,13 @@ namespace BigDataCore
                     _docs.Add(i, null);
             }
 
-            public async Task<List<HtmlDocument>> DownloadDocsAsync()
+            public async Task<List<HtmlDocument>> DownloadDocsAsync(int sleep_ms = 0)
             {
                 var counter = 0;
                 foreach (var url in _urls)
                 {
                     DownloadDoc(url, counter);
+                    if (sleep_ms != 0) await Task.Delay(sleep_ms);
                     counter++;
                 }
                 await new AThingThatFreezesTask(this, _urls.Count).Freeze();

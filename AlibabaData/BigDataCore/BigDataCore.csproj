@@ -50,9 +50,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BloodyButcher.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScrapingTools.cs" />
+    <Compile Include="StrongholdLibrarian.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
