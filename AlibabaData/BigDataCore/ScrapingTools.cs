@@ -4,9 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 using System.Net.Http;
 using System.Net;
+
 using HtmlAgilityPack;
 
 namespace BigDataCore
@@ -15,17 +17,97 @@ namespace BigDataCore
     {
         private Random _rnd = new Random();
 
-        public async Task<HtmlDocument> GetDocAsync(string url)
+        public HtmlNodeCollection GetXPathNodes(HtmlDocument doc, string xpath)
         {
-            var client = new HttpClient();
-            string page = await client.GetStringAsync(url);
-            page = WebUtility.HtmlDecode(page);
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(page);
-            return doc;
+            var cl = doc.DocumentNode.SelectNodes(xpath);
+            if (cl == null) throw new Exception("Nothing found by xpath.");
+            return cl;
         }
 
-        public List<int> GenPageSequence(int maxPageNum, int chunkSize = 6)
+        public List<string> GetXPathNodesAndProcess(HtmlDocument doc, string xpath,
+            Func<HtmlNodeCollection, List<string>> processor = null)
+        {
+            var collection = GetXPathNodes(doc, xpath);
+            if (processor == null) processor = nodes => nodes.Select(node => node.InnerText).ToList();
+            return processor(collection);
+        }
+
+        public async Task<HtmlDocument> DownloadDocAsync(string url, int sleep_ms = 0)
+        {
+            return (await DownloadMultipleDocsAsync(new List<string> { url }, sleep_ms)).First();
+        }
+
+        public async Task<List<HtmlDocument>> DownloadMultipleDocsAsync(List<string> urls, int sleep_ms = 0)
+        {
+            var docs = await new DocsLoader(urls).DownloadDocsAsync();
+            if (sleep_ms != 0) await Task.Delay(sleep_ms);
+            return docs;
+        }
+
+        private class DocsLoader
+        {
+            private SortedDictionary<int, HtmlDocument> _docs = new SortedDictionary<int, HtmlDocument>();
+            private List<string> _urls;
+
+            private DocsLoader() { }
+            public DocsLoader(List<string> urls)
+            {
+                _urls = urls;
+                for (int i = 0; i < _urls.Count; i++)
+                    _docs.Add(i, null);
+            }
+
+            public async Task<List<HtmlDocument>> DownloadDocsAsync()
+            {
+                var counter = 0;
+                foreach (var url in _urls)
+                {
+                    DownloadDoc(url, counter);
+                    counter++;
+                }
+                await new AThingThatFreezesTask(this, _urls.Count).Freeze();
+                return _docs.Select(pair => pair.Value).ToList();
+            }
+
+            public event EventHandler<string> OnDocLoaded;
+
+            private async void DownloadDoc(string url, int key)
+            {
+                var client = new HttpClient();
+                string page = await client.GetStringAsync(url);
+                page = WebUtility.HtmlDecode(page);
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(page);
+                _docs[key] = doc;
+                OnDocLoaded?.Invoke(this, url);
+            }
+
+            private class AThingThatFreezesTask
+            {
+                private int _maxCount;
+                private int _currentCount;
+
+                private AThingThatFreezesTask() { }
+                public AThingThatFreezesTask(DocsLoader dad, int maxCount)
+                {
+                    _maxCount = maxCount;
+                    dad.OnDocLoaded += (s, url) =>
+                    {
+                        _currentCount++;
+                        if (_currentCount == _maxCount) phosphor.Release();
+                    };
+                }
+
+                private SemaphoreSlim phosphor;
+                public async Task Freeze()
+                {
+                    phosphor = new SemaphoreSlim(0, 1);
+                    await phosphor.WaitAsync();
+                }
+            }
+        }
+
+        public List<int> GenChunkSequence(int maxPageNum, int chunkSize = 6)
         {
             if (chunkSize < 1 || chunkSize > maxPageNum)
                 throw new Exception($"Invalid chunk size. chS: {chunkSize}. maxP: {maxPageNum}");
@@ -66,7 +148,7 @@ namespace BigDataCore
                 }
             }
 
-            Debug.WriteLine("ScrapingTools: Page sequence generated.");
+            Debug.WriteLine("ScrapingTools: Chunk int sequence generated.");
             return rndList;
         }
     }
