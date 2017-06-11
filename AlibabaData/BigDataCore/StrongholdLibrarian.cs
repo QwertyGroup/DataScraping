@@ -103,5 +103,21 @@ namespace BigDataCore
             var dir = $"{RootDirectory}/Data/";
             throw new NotImplementedException();
         }
+
+        public List<string> ReadFile(string name)
+        {
+            return File.ReadLines(RootDirectory + name).ToList();
+        }
+
+        public void SaveFile(string name, List<string> data)
+        {
+            File.WriteAllLines(RootDirectory.CheckDirectory(), data);
+        }
+
+        public void SaveFile(string name, string data)
+        {
+            File.WriteAllText(RootDirectory.CheckDirectory(), data);
+        }
+
     }
 }

@@ -159,5 +159,13 @@ namespace BigDataCore
             Debug.WriteLine("ScrapingTools: Chunk int sequence generated.");
             return rndList;
         }
+
+        public int GenRndDelay(int bottom_ms, int top_ms)
+        {
+            if (bottom_ms > top_ms)
+                (bottom_ms, top_ms) = (top_ms, bottom_ms);
+
+            return _rnd.Next(top_ms - bottom_ms) + bottom_ms;
+        }
     }
 }

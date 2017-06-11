@@ -23,13 +23,13 @@ namespace Watches
 
     class Rolex
     {
+        private Random _rnd = new Random();
         private StrongholdLibrarian _lib = new StrongholdLibrarian();
         private ScrapingTools _tools = new ScrapingTools();
 
         public void Start()
         {
-            //Test();
-            //ToL();
+            //Lower();
             //Merge();
             GatherLinks();
         }
@@ -47,7 +47,7 @@ namespace Watches
 
         private async void GatherLinks()
         {
-            List<(string fbrand, string shrt)> brands = File.ReadAllLines("RawBrands.txt").
+            List<(string fbrand, string shrt)> brands = _lib.ReadFile("RawBrands.txt").
                 Select(line =>
                 {
                     var spl = line.SplitByAndTrim("->");
@@ -69,7 +69,7 @@ namespace Watches
                 {
                     var counter = 0;
                     var urls = new List<string>();
-                    while (counter < 4 && pagelist.Any())
+                    while (counter < _rnd.Next(3) + 1 && pagelist.Any())
                     {
                         urls.Add(rootlink + pagelist.First());
                         pagelist.RemoveAt(0);
@@ -78,12 +78,12 @@ namespace Watches
                     pairs.AddRange(await GetLinkPairs(urls));
                     pagesCounter += counter;
                     Console.WriteLine(pagesCounter + " of " + maxpages);
-                    await Task.Delay(200);
+                    await Task.Delay(_tools.GenRndDelay(600, 900));
                 }
 
                 _lib.SaveLinksToFile(brandpair.fbrand, pairs);
 
-                await Task.Delay(1000);
+                await Task.Delay(_tools.GenRndDelay(1000, 1200));
             }
         }
 
@@ -92,11 +92,10 @@ namespace Watches
             var data = _tools.GetXPathNodesAndProcess(
                 await _tools.DownloadDocAsync(url), "//*[@id=\"watches\"]/div[2]/div[2]/ul/li").
                 Select(line => line.Replace(" ", string.Empty).Replace("\n", string.Empty)).ToList();
-            //if (data.Contains("Next"))
             return Convert.ToInt32(data[data.Count - 2]);
         }
 
-        private void ToL()
+        private void Lower()
         {
             var lines = File.ReadAllLines("ToLoad.txt");
             lines = lines.Select(line => line.ToLower().Replace(" ", string.Empty).
@@ -104,37 +103,9 @@ namespace Watches
             File.WriteAllLines("Lower.txt", lines);
         }
 
-        private async void Test()
-        {
-            //var urls = new[] {
-            //    "http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=1",
-            //    "http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=2",
-            //    "http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=3",
-            //    "http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=508"
-            //}.ToList();
-
-            var urls1 = new[] {
-               "http://www.chrono24.com/carlfbucherer/index.htm?man=carlfbucherer&pageSize=120&showpage=1",
-               "http://www.chrono24.com/carlfbucherer/index.htm?man=carlfbucherer&pageSize=120&showpage=2",
-               "http://www.chrono24.com/carlfbucherer/index.htm?man=carlfbucherer&pageSize=120&showpage=3",
-               "http://www.chrono24.com/carlfbucherer/index.htm?man=carlfbucherer&pageSize=120&showpage=4"
-            }.ToList();
-
-            var urls2 = new[]
-            {
-               "http://www.chrono24.com/carlfbucherer/index.htm?man=carlfbucherer&pageSize=120&showpage=5",
-               "http://www.chrono24.com/carlfbucherer/index.htm?man=carlfbucherer&pageSize=120&showpage=6",
-               "http://www.chrono24.com/carlfbucherer/index.htm?man=carlfbucherer&pageSize=120&showpage=7"
-            }.ToList();
-
-            var pairs = await GetLinkPairs(urls1);
-            await Task.Delay(1080);
-            pairs.AddRange(await GetLinkPairs(urls2));
-        }
-
         public async Task<List<(string model, string link)>> GetLinkPairs(List<string> urls)
         {
-            var docs = await _tools.DownloadMultipleDocsAsync(urls);
+            var docs = await _tools.DownloadMultipleDocsAsync(urls, _tools.GenRndDelay(200, 300));
             var pairs = new List<(string model, string link)>();
 
             foreach (var doc in docs)
