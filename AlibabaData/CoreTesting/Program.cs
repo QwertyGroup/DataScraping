@@ -12,8 +12,8 @@ namespace CoreTesting
     {
         static void Main(string[] args)
         {
-            TestBase test = new LibrarianTesting(); // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
-                                                    // LibrarianTesting |
+            TestBase test = new BotTesting();        // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
+                                                     // LibrarianTesting | BotTesting
             test.Main();
             Console.ReadLine();
         }
@@ -22,6 +22,15 @@ namespace CoreTesting
     abstract class TestBase
     {
         public abstract void Main();
+    }
+
+    class BotTesting : TestBase
+    {
+        public override void Main()
+        {
+            var eye = new EyeOfTheUniverse();
+            eye.SendMessage("kek");
+        }
     }
 
     class Random_ascii : TestBase

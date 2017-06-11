@@ -31,7 +31,31 @@ namespace Watches
         {
             //Lower();
             //Merge();
-            GatherLinks();
+
+            //GatherLinks();
+
+            //CountWatches();
+        }
+
+        private void CountWatches()
+        {
+            var files = _lib.GetFilesFromDirectory(StrongholdLibrarian.FileName.Name, "Links/");
+            var selector = 1;
+            var info = files.Select(file => _lib.ReadGeneralInfo(file, "Links/")).
+                Aggregate((acc, list) =>
+                {
+                    list = list.Select(item => { item.field = files[selector]; return item; }).ToList();
+                    acc.AddRange(list);
+                    selector++;
+                    return acc;
+                }).ToList(); // Why acc starts with first element
+
+            var total = info.Select(item => Convert.ToInt32(item.data)).Aggregate((acc, val) => acc += val);
+
+            _lib.SaveFile("CountInfo.txt", info.Select(item => item.field + ": " + item.data).ToList(), "Info/");
+            _lib.AppendFile("CountInfo.txt", $"Total: {total.ToString()}", "Info/");
+
+            Console.WriteLine("Count done.");
         }
 
         private void Merge()

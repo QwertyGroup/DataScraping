@@ -62,7 +62,7 @@ namespace BigDataCore
 
             File.WriteAllLines(path, model_link.Select(ml => $"{ml.model} -> {ml.link}"));
             File.AppendAllLines(path, new[] { string.Empty, new string('*', 32),
-                $"Model count: {model_link.Count}" });
+                $"Model count := {model_link.Count}" });
         }
 
         public List<(string brand, List<(string model, string link)> model_link)> LoadLinksFromFiles()
@@ -109,15 +109,60 @@ namespace BigDataCore
             return File.ReadLines(RootDirectory + name).ToList();
         }
 
-        public void SaveFile(string name, List<string> data)
+        public void SaveFile(string name, List<string> data, string pathfromRoot = "")
         {
-            File.WriteAllLines(RootDirectory.CheckDirectory(), data);
+            File.WriteAllLines((RootDirectory + pathfromRoot).CheckDirectory() + name, data);
         }
 
-        public void SaveFile(string name, string data)
+        public void AppendFile(string name, List<string> data, string pathfromRoot = "")
         {
-            File.WriteAllText(RootDirectory.CheckDirectory(), data);
+            File.AppendAllLines((RootDirectory + pathfromRoot).CheckDirectory() + name, data);
         }
 
+        public void SaveFile(string name, string data, string pathfromRoot = "")
+        {
+            File.WriteAllText((RootDirectory + pathfromRoot).CheckDirectory() + name, data);
+        }
+
+        public void AppendFile(string name, string data, string pathfromRoot = "")
+        {
+            File.AppendAllText((RootDirectory + pathfromRoot).CheckDirectory() + name, data);
+        }
+
+        public void AppendGeneralInfo(string fname, List<(string field, string data)> info, string pathfromRoot = "")
+        {
+            fname = RootDirectory + pathfromRoot + fname;
+            var lines = File.ReadAllLines(fname).ToList();
+            lines.AddRange(info.Select(item => $"{item.field} := {item.data}"));
+            File.WriteAllLines(fname, lines);
+        }
+
+        public List<(string field, string data)> ReadGeneralInfo(string fname, string pathfromRoot = "")
+        {
+            fname = RootDirectory + pathfromRoot + fname;
+            var lines = File.ReadAllLines(fname).ToList();
+            var startindex = lines.IndexOf(new string('*', 32));
+            lines.RemoveRange(0, startindex + 1);
+            return lines.Select(line =>
+            {
+                var spl = line.SplitByAndTrim(":"); // ":=" !!!!!! FIX LATER
+                return (spl[0], spl[1]);
+            }).ToList();
+        }
+
+        public enum FileName { FullPath, Name }
+        public List<string> GetFilesFromDirectory(FileName fn, string pathfromRoot = "")
+        {
+            pathfromRoot = RootDirectory + pathfromRoot;
+            var files = Directory.GetFiles(pathfromRoot);
+
+            if (fn == FileName.FullPath)
+                return files.ToList();
+
+            if (fn == FileName.Name)
+                return files.Select(file => Path.GetFileName(file)).ToList();
+
+            return null;
+        }
     }
 }
