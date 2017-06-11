@@ -32,6 +32,13 @@ namespace BigDataCore
             return processor(collection);
         }
 
+        public List<List<string>> GetXPathNodesAndProcess(HtmlDocument doc, string xpath,
+            Func<HtmlNodeCollection, List<List<string>>> processor)
+        {
+            var collection = GetXPathNodes(doc, xpath);
+            return processor(collection);
+        }
+
         public async Task<HtmlDocument> DownloadDocAsync(string url, int sleep_ms = 0)
         {
             var doc = (await DownloadMultipleDocsAsync(new List<string> { url }, sleep_ms)).First();

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BigDataCore
 {
-    class BloodyButcher // csv parser
+    public class BloodyButcher // csv parser
     {
         // TODO: adapt Mark's parser to appedned data pattern
     }

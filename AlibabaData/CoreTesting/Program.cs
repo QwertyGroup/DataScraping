@@ -12,7 +12,8 @@ namespace CoreTesting
     {
         static void Main(string[] args)
         {
-            TestBase test = new MultLoadTesting(); // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
+            TestBase test = new LibrarianTesting(); // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
+                                                    // LibrarianTesting |
             test.Main();
             Console.ReadLine();
         }
@@ -45,6 +46,58 @@ namespace CoreTesting
         }
     }
 
+    class LibrarianTesting : TestBase
+    {
+        private StrongholdLibrarian _lib = new StrongholdLibrarian();
+        private ScrapingTools _tools = new ScrapingTools();
+
+        public override void Main()
+        {
+            //Test1();
+            Test2();
+        }
+
+        private async void Test2()
+        {
+            // http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=1
+            // http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=2
+            // //*[@id=\"watch-5793154\"]/span[2]/strong
+            // //*[@id=\"watches\"]/div[1]/div/a/span[2]/strong
+            // //*[@id="watch-6329862"]/span[2]/strong
+            // //*[@id="watch-6329862"]
+
+            var urls = new[] {
+                "http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=1",
+                "http://www.chrono24.com/rolex/index.htm?man=rolex&pageSize=120&showpage=2"
+            };
+
+            var docs = await _tools.DownloadMultipleDocsAsync(urls.ToList());
+
+            var nodes1 = _tools.GetXPathNodesAndProcess(docs[0], "//*[@id=\"watches\"]/div[1]/div");
+
+            var nodes2links = _tools.GetXPathNodesAndProcess(docs[1], "//*[@id=\"watches\"]/div[1]/div/a",
+                nodes => nodes.Select(node => node.GetAttributeValue("href", "def")).ToList());
+
+            var nodes2names = _tools.GetXPathNodesAndProcess(docs[1], "//*[@id=\"watches\"]/div[1]/div/a/span[2]/strong",
+                nodes => nodes.Select(node =>
+                node.InnerText.Replace("\r\n", string.Empty).Replace(" ", string.Empty)).ToList());
+        }
+
+        private void Test1()
+        {
+            _lib.RootDirectory = "TestRootDir";
+
+            var pairs = new List<(string, string)> { ("model1", "link1"), ("model2", "link2"),
+                ("model3", "link3"),("model4", "link4") };
+
+            _lib.SaveLinksToFile("Brand1", pairs);
+            _lib.SaveLinksToFile("Brand2", pairs);
+            _lib.SaveLinksToFile("Brand3", pairs);
+
+            var loaded = _lib.LoadLinksFromFiles();
+        }
+    }
+
     class MultLoadTesting : TestBase
     {
         private ScrapingTools _coreTools = new ScrapingTools();
@@ -53,7 +106,13 @@ namespace CoreTesting
         {
             Console.WriteLine("MultLoadTesting");
 
-            RunDL();
+            //RunDL();
+            RunBikes();
+        }
+
+        private void RunBikes()
+        {
+
         }
 
         private async void RunDL()
