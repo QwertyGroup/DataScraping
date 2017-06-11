@@ -165,7 +165,9 @@ namespace BigDataCore
             if (bottom_ms > top_ms)
                 (bottom_ms, top_ms) = (top_ms, bottom_ms);
 
-            return _rnd.Next(top_ms - bottom_ms) + bottom_ms;
+            var delay = _rnd.Next(top_ms - bottom_ms) + bottom_ms;
+            Debug.WriteLine($"Delay gen.: {delay} ms");
+            return delay;
         }
     }
 }

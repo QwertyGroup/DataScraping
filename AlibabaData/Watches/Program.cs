@@ -69,7 +69,7 @@ namespace Watches
                 {
                     var counter = 0;
                     var urls = new List<string>();
-                    while (counter < _rnd.Next(3) + 1 && pagelist.Any())
+                    while (counter < _rnd.Next(3) + 3 && pagelist.Any())
                     {
                         urls.Add(rootlink + pagelist.First());
                         pagelist.RemoveAt(0);
@@ -78,13 +78,15 @@ namespace Watches
                     pairs.AddRange(await GetLinkPairs(urls));
                     pagesCounter += counter;
                     Console.WriteLine(pagesCounter + " of " + maxpages);
-                    await Task.Delay(_tools.GenRndDelay(600, 900));
+                    await Task.Delay(_tools.GenRndDelay(300, 400));
                 }
 
                 _lib.SaveLinksToFile(brandpair.fbrand, pairs);
 
-                await Task.Delay(_tools.GenRndDelay(1000, 1200));
+                await Task.Delay(_tools.GenRndDelay(800, 1000));
             }
+
+            Console.WriteLine("All done!");
         }
 
         private async Task<int> GetMaxPage(string url)
@@ -105,7 +107,7 @@ namespace Watches
 
         public async Task<List<(string model, string link)>> GetLinkPairs(List<string> urls)
         {
-            var docs = await _tools.DownloadMultipleDocsAsync(urls, _tools.GenRndDelay(200, 300));
+            var docs = await _tools.DownloadMultipleDocsAsync(urls, _tools.GenRndDelay(100, 120));
             var pairs = new List<(string model, string link)>();
 
             foreach (var doc in docs)
