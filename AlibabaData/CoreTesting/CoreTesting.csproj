@@ -56,9 +56,5 @@
       <Name>BigDataCore</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="Scripts\firebase-debug.js" />
-    <Content Include="Scripts\firebase.js" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
