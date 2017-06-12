@@ -26,10 +26,12 @@ namespace CoreTesting
 
     class BotTesting : TestBase
     {
+        //private EyeOfTheUniverse _eye;
+
         public override void Main()
         {
-            var eye = new EyeOfTheUniverse();
-            eye.SendMessage("kek");
+            //_eye = new EyeOfTheUniverse();
+            //_eye.SendMessage("kek");
         }
     }
 
