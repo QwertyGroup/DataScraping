@@ -8,6 +8,6 @@ namespace BigDataCore
 {
     public class BloodyButcher // csv parser
     {
-        // TODO: adapt Mark's parser to appedned data pattern
+        // TODO: adapt Mark's parser to appended data pattern
     }
 }
