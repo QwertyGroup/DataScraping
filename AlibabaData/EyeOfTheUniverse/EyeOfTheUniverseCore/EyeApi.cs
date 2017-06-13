@@ -9,6 +9,7 @@ using Telegram.Bot;
 using FireSharp;
 using FireSharp.Config;
 using FireSharp.Interfaces;
+using FireSharp.Response;
 
 namespace EyeOfTheUniverseCore
 {
@@ -40,7 +41,7 @@ namespace EyeOfTheUniverseCore
                 SendMessage(chat.ID, msg);
         }
 
-        public async void SendMessage(int chatId, string msg)
+        public async void SendMessage(long chatId, string msg)
         {
             await _tbot.SendTextMessageAsync(chatId, msg);
         }
@@ -60,16 +61,8 @@ namespace EyeOfTheUniverseCore
 
     public class BurningLibrarian // internal
     {
-        public List<(string Name, int ID)> GetAllChats()
+        private FirebaseClient getFireBase()
         {
-            var chats = new List<(string Name, int ID)> { ("Arseniy", 364448153) };
-            // DO FIREBASE 
-            return chats;
-        }
-
-        public void AddPerson(string name, int id)
-        {
-            // ADD PERSON TO FIREBASE
             var AuthSecret = "SvHo982KfZBN8uZcLQGzMbf8fyRKJBl3QWXUADZQ";
             var BasePath = "https://eye-of-the-universe.firebaseio.com";
             IFirebaseConfig Config = new FirebaseConfig
@@ -78,6 +71,22 @@ namespace EyeOfTheUniverseCore
                 BasePath = BasePath
             };
             var Client = new FirebaseClient(Config);
+            return Client;
+        }
+        public List<(string Name, long ID)> GetAllChats()
+        {
+            var chats = new List<(string Name, long ID)> { ("Arseniy", 364448153) };
+            // DO FIREBASE
+            var Client = getFireBase();
+            FirebaseResponse response = Client.Get("");
+            chats = response.ResultAs<List<(string, long)>>();
+            return chats;
+        }
+
+        public void AddPerson(string name, long id)
+        {
+            // ADD PERSON TO FIREBASE
+            var Client = getFireBase();
             Client.Set(id.ToString(), name);
         }
     }
