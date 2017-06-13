@@ -57,6 +57,11 @@ namespace EyeOfTheUniverseCore
             add { _tbot.OnUpdate += value; }
             remove { _tbot.OnUpdate -= value; }
         }
+
+        public void AddNewGod((long id, string name, bool flag) newGod)
+        {
+            new BurningLibrarian().AddPerson(newGod.name, newGod.id);
+        }
     }
 
     public class BurningLibrarian // internal
