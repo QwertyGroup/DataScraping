@@ -55,6 +55,10 @@
       <Project>{ed7672b8-b24b-4ff2-b288-4f4149e5f85d}</Project>
       <Name>BigDataCore</Name>
     </ProjectReference>
+    <ProjectReference Include="..\EyeOfTheUniverse\EyeOfTheUniverseCore\EyeOfTheUniverseCore.csproj">
+      <Project>{764E634C-93A1-4ACF-8D04-7765F9C36A02}</Project>
+      <Name>EyeOfTheUniverseCore</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 using Telegram.Bot;
+
 using FireSharp;
 using FireSharp.Config;
 using FireSharp.Interfaces;
@@ -56,7 +58,7 @@ namespace EyeOfTheUniverseCore
         }
     }
 
-    public class BurningLibrarian
+    public class BurningLibrarian // internal
     {
         public List<(string Name, int ID)> GetAllChats()
         {

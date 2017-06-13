@@ -1,5 +1,5 @@
 ﻿using BigDataCore;
-
+using EyeOfTheUniverseCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,8 +12,8 @@ namespace CoreTesting
     {
         static void Main(string[] args)
         {
-            TestBase test = new BotTesting();        // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
-                                                     // LibrarianTesting | BotTesting
+            TestBase test = new FirebaseTesting();        // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
+                                                          // LibrarianTesting | BotTesting | FirebaseTesting
             test.Main();
             Console.ReadLine();
         }
@@ -22,6 +22,17 @@ namespace CoreTesting
     abstract class TestBase
     {
         public abstract void Main();
+    }
+
+    class FirebaseTesting : TestBase
+    {
+        public override void Main()
+        {
+            Console.WriteLine("FirebaseTesting");
+
+            var burnlib = new BurningLibrarian();
+            burnlib.AddPerson("Orsen", 173729043);
+        }
     }
 
     class BotTesting : TestBase
