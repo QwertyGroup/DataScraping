@@ -4,6 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
+using FireSharp;
+using FireSharp.Config;
+using FireSharp.Interfaces;
 
 namespace EyeOfTheUniverseCore
 {
@@ -53,7 +56,7 @@ namespace EyeOfTheUniverseCore
         }
     }
 
-    internal class BurningLibrarian
+    public class BurningLibrarian
     {
         public List<(string Name, int ID)> GetAllChats()
         {
@@ -65,6 +68,15 @@ namespace EyeOfTheUniverseCore
         public void AddPerson(string name, int id)
         {
             // ADD PERSON TO FIREBASE
+            var AuthSecret = "SvHo982KfZBN8uZcLQGzMbf8fyRKJBl3QWXUADZQ";
+            var BasePath = "https://eye-of-the-universe.firebaseio.com";
+            IFirebaseConfig Config = new FirebaseConfig
+            {
+                AuthSecret = AuthSecret,
+                BasePath = BasePath
+            };
+            var Client = new FirebaseClient(Config);
+            Client.Set(id.ToString(), name);
         }
     }
 }
