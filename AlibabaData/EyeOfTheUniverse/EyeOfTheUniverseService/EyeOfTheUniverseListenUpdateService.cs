@@ -50,6 +50,8 @@ namespace EyeOfTheUniverseService
                 _NewGod.name = e.Message.Text;
 
                 _api.AddNewGod(_NewGod);
+
+                _NewGod = (0, string.Empty, false);
                 return;
             }
         }

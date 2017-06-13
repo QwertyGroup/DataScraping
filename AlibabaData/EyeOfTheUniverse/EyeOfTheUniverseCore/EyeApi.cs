@@ -37,6 +37,7 @@ namespace EyeOfTheUniverseCore
         public void SpreadMessage(string msg)
         {
             var chats = _lib.GetAllChats();
+            if (chats == null) return;
             foreach (var chat in chats)
                 SendMessage(chat.ID, msg);
         }
