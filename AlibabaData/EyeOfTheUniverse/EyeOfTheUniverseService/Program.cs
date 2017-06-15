@@ -9,7 +9,7 @@ namespace EyeOfTheUniverseService
 {
     static class Program
     {
-        static void Main()
+        public static void Main()
         {
 #if DEBUG
             var service = new EyeOfTheUniverseListenUpdateService();
