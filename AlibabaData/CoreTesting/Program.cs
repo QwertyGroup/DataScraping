@@ -12,8 +12,8 @@ namespace CoreTesting
     {
         static void Main(string[] args)
         {
-            TestBase test = new FirebaseTesting();        // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
-                                                          // LibrarianTesting | BotTesting | FirebaseTesting
+            TestBase test = new BotTesting();        // ToolsTesting | AsyncTesting | MultLoadTesting | Random_ascii
+                                                     // LibrarianTesting | BotTesting | FirebaseTesting
             test.Main();
             Console.ReadLine();
         }
@@ -37,12 +37,12 @@ namespace CoreTesting
 
     class BotTesting : TestBase
     {
-        //private EyeOfTheUniverse _eye;
+        private EyeApi _eye;
 
         public override void Main()
         {
-            //_eye = new EyeOfTheUniverse();
-            //_eye.SendMessage("kek");
+            _eye = new EyeApi();
+            _eye.SpreadMessage("Some debug info.");
         }
     }
 
