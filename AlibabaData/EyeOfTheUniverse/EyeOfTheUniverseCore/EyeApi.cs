@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Telegram.Bot;
-
-using FireSharp;
+﻿using FireSharp;
 using FireSharp.Config;
 using FireSharp.Interfaces;
 using FireSharp.Response;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+
+using Telegram.Bot;
 
 namespace EyeOfTheUniverseCore
 {
@@ -59,15 +58,44 @@ namespace EyeOfTheUniverseCore
             remove { _tbot.OnUpdate -= value; }
         }
 
+        BurningLibrarian _burnLib = new BurningLibrarian();
         public void AddNewGod((long id, string name, bool flag) newGod)
         {
-            new BurningLibrarian().AddPerson(newGod.name, newGod.id);
+            _burnLib.AddPerson(newGod.name, newGod.id);
+        }
+
+        public void RemoveGod(long id)
+        {
+            _burnLib.RemovePerson(id);
+        }
+
+        public List<(string Name, long ID)> GetGods()
+        {
+            return _burnLib.GetAllChats();
+        }
+
+        public bool CheckForInternetConnection()
+        {
+            try
+            {
+                using (var client = new WebClient())
+                {
+                    using (var stream = client.OpenRead("http://www.google.com"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
-    public class BurningLibrarian // internal
+    internal class BurningLibrarian
     {
-        private FirebaseClient getFireBase()
+        private FirebaseClient GetFireBase()
         {
             var AuthSecret = "SvHo982KfZBN8uZcLQGzMbf8fyRKJBl3QWXUADZQ";
             var BasePath = "https://eye-of-the-universe.firebaseio.com";
@@ -79,21 +107,26 @@ namespace EyeOfTheUniverseCore
             var Client = new FirebaseClient(Config);
             return Client;
         }
+
         public List<(string Name, long ID)> GetAllChats()
         {
-            var chats = new List<(string Name, long ID)> { ("Arseniy", 364448153) };
-            // DO FIREBASE
-            var Client = getFireBase();
-            FirebaseResponse response = Client.Get("");
-            chats = response.ResultAs<List<(string, long)>>();
-            return chats;
+            var Client = GetFireBase();
+            FirebaseResponse response = Client.Get("God");
+            var chats = response.ResultAs<Dictionary<long, string>>() ?? new Dictionary<long, string>();
+
+            return chats.Select(god => (god.Value, god.Key)).ToList();
         }
 
-        public void AddPerson(string name, long id)
+        public async void AddPerson(string name, long id)
         {
-            // ADD PERSON TO FIREBASE
-            var Client = getFireBase();
-            Client.Set(id.ToString(), name);
+            var client = GetFireBase();
+            await client.SetAsync($"God/{id}", name);
+        }
+
+        public async void RemovePerson(long id)
+        {
+            var client = GetFireBase();
+            await client.DeleteAsync($"God/{id}");
         }
     }
 }

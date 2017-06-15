@@ -33,13 +33,15 @@
             // 
             // eyeOfTheUniverseServiceProcessInstaller
             // 
-            this.eyeOfTheUniverseServiceProcessInstaller.Account = System.ServiceProcess.ServiceAccount.LocalService;
+            this.eyeOfTheUniverseServiceProcessInstaller.Account = System.ServiceProcess.ServiceAccount.LocalSystem;
             this.eyeOfTheUniverseServiceProcessInstaller.Password = null;
             this.eyeOfTheUniverseServiceProcessInstaller.Username = null;
             // 
             // eyeOfTheUniverseServiceInstaller
             // 
-            this.eyeOfTheUniverseServiceInstaller.ServiceName = "Service1";
+            this.eyeOfTheUniverseServiceInstaller.ServiceName = "EyeOfTheUniverseService";
+            this.eyeOfTheUniverseServiceInstaller.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
+            this.eyeOfTheUniverseServiceInstaller.AfterInstall += new System.Configuration.Install.InstallEventHandler(this.EyeOfTheUniverseServiceInstaller_AfterInstall);
             // 
             // ProjectInstaller
             // 

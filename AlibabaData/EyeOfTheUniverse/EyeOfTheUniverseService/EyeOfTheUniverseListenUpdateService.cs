@@ -1,12 +1,9 @@
 ﻿using EyeOfTheUniverseCore;
+
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace EyeOfTheUniverseService
@@ -24,12 +21,14 @@ namespace EyeOfTheUniverseService
         }
 
         private EyeApi _api;
-        protected override void OnStart(string[] args)
+        protected override async void OnStart(string[] args)
         {
             _api = new EyeApi();
             _api.OnMessage += OnMessgeReceived;
             _api.StartListening();
-            _api.SpreadMessage("Listening service: ON.");
+            while (!_api.CheckForInternetConnection())
+                await Task.Delay(TimeSpan.FromSeconds(5));
+            _api.SpreadMessage($"Listening service is On now.{Environment.NewLine}But you will never know when it stops.");
         }
 
         (long id, string name, bool flag) _NewGod = (0, string.Empty, false);
@@ -50,15 +49,39 @@ namespace EyeOfTheUniverseService
                 _NewGod.name = e.Message.Text;
 
                 _api.AddNewGod(_NewGod);
+                _api.SendMessage(_NewGod.id, "My regards.");
 
                 _NewGod = (0, string.Empty, false);
+                return;
+            }
+
+            // YOU HAVE TO BE GOD NOW!
+            if (!_api.GetGods().Select(god => god.ID).ToList().Contains(e.Message.Chat.Id))
+            {
+                _api.SendMessage(e.Message.Chat.Id, "Sry, but you are not a God.");
+                return;
+            }
+
+            if (e.Message.Text == "Remove me" || e.Message.Text == "/remove_me")
+            {
+                var id = e.Message.Chat.Id;
+                _api.RemoveGod(id);
+                _api.SendMessage(id, "You are no longer in Gods party.");
+                return;
+            }
+
+            if (e.Message.Text == "View Gods" || e.Message.Text == "/view_gods")
+            {
+                var gods = _api.GetGods();
+                var msg = $"Count: {gods.Count}{Environment.NewLine}";
+                msg += gods.Select(god => $"{god.Name}{Environment.NewLine}").Aggregate((acc, god) => acc += god);
+                _api.SendMessage(e.Message.Chat.Id, msg);
                 return;
             }
         }
 
         protected override void OnStop()
         {
-            _api.SpreadMessage("Listening service: OFF.");
             _api.StopListening();
         }
     }

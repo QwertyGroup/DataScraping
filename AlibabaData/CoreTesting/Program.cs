@@ -30,8 +30,8 @@ namespace CoreTesting
         {
             Console.WriteLine("FirebaseTesting");
 
-            var burnlib = new BurningLibrarian();
-            burnlib.AddPerson("Orsen", 173729043);
+            //var burnlib = new BurningLibrarian();
+            //burnlib.AddPerson("Orsen", 23533);
         }
     }
 
