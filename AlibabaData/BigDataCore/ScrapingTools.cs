@@ -92,7 +92,13 @@ namespace BigDataCore
                 }
                 catch (Exception ex)
                 {
-                    await new EyeApi().SpreadMessageAsync(ex.Message + Environment.NewLine + url);
+                    if (!ex.Message.Contains("410")) // filter
+                    {
+                        if (ex.Message.Contains("403"))
+                            await new EyeApi().SpreadMessageAsync("403" + Environment.NewLine + ex.Message + Environment.NewLine + url);
+                        else
+                            await new EyeApi().SpreadMessageAsync(ex.Message + Environment.NewLine + url);
+                    }
                     if (ex.Message.Contains("403")) throw ex;
                     _docs[key] = null;
                     OnDocLoaded?.Invoke(this, url);

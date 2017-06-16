@@ -126,9 +126,9 @@ namespace BigDataCore
             throw new NotImplementedException();
         }
 
-        public List<string> ReadFile(string name)
+        public List<string> ReadFile(string name, string pathfromRoot = "")
         {
-            return File.ReadLines(RootDirectory + name).ToList();
+            return File.ReadLines(RootDirectory + pathfromRoot + name).ToList();
         }
 
         public void SaveFile(string name, List<string> data, string pathfromRoot = "")
@@ -188,6 +188,34 @@ namespace BigDataCore
                 return files.Select(file => Path.GetFileNameWithoutExtension(file)).ToList();
 
             return null;
+        }
+
+        public int CountModels(string brand)
+        {
+            brand = $"{brand}.txt";
+            var lines = ReadFile(brand, "Data/");
+            lines.RemoveRange(0, lines.IndexOf(new string('*', 32)) + 1);
+            var fields = new Dictionary<string, string>();
+            foreach (var line in lines)
+            {
+                var spl = line.SplitByAndTrim(":");
+                fields.Add(spl[0], spl[1]);
+            }
+            return Convert.ToInt32(fields["Count"]);
+        }
+
+        public string GetLastLink(string brand)
+        {
+            brand = $"{brand}.txt";
+            var lines = ReadFile(brand, "Data/");
+            var links = new List<string>();
+            foreach (var line in lines)
+            {
+                if (!line.Contains("->")) continue;
+                var spl = line.SplitByAndTrim("->");
+                if (spl[0] == "Link") links.Add(spl[1]);
+            }
+            return links.Last();
         }
     }
 }

@@ -29,7 +29,7 @@ namespace Watches
         private StrongholdLibrarian _lib = new StrongholdLibrarian();
         private ScrapingTools _tools = new ScrapingTools();
 
-        public void Start()
+        public async void Start()
         {
             //Lower();
             //Merge();
@@ -44,7 +44,7 @@ namespace Watches
             }
             catch (Exception ex)
             {
-                new EyeApi().SpreadMessage(ex.Message);
+                await new EyeApi().SpreadMessageAsync(ex.Message);
                 throw;
             }
 
@@ -70,8 +70,12 @@ namespace Watches
             //var br = links[1]; // Testing
             {
                 var alreadyloaded = _lib.GetFilesFromDirectory(StrongholdLibrarian.FileName.NameWithoutExtension, "Data/");
-                if (alreadyloaded.Contains(br.brand)) continue;
+                if (alreadyloaded.Contains(br.brand))
+                    br.model_link.RemoveRange(0,
+                        br.model_link.Select(ml => ml.link).ToList().IndexOf(_lib.GetLastLink(br.brand)) + 1);
+
                 Console.WriteLine($"{br.brand} Starting...");
+                new EyeApi().SpreadMessage($"Next on queue: {br.brand}.");
                 var sw = new Stopwatch(); sw.Start();
 
                 var donecounter = 0;
@@ -95,7 +99,7 @@ namespace Watches
                     var nodesResult = new List<HtmlNodeCollection>();
                     try
                     {
-                        var docs = await _tools.DownloadMultipleDocsAsync(linksChunk, _tools.GenRndDelay(60, 120));
+                        var docs = await _tools.DownloadMultipleDocsAsync(linksChunk, _tools.GenRndDelay(50, 90));
                         for (int i = 0; i < docs.Count; i++)
                             if (docs[i] == null)
                             {
@@ -149,6 +153,13 @@ namespace Watches
                             }
                         }
 
+                        if (modelFields.Count == 0)
+                        {
+                            await new EyeApi().SpreadMessageAsync(
+                                $"Not a watch page? {Environment.NewLine}{linksChunk.First()}");
+                            continue;
+                        }
+
                         modelFields.Insert(1, ("Model", model));
                         modelFields.Insert(0, ("Link", linksChunk[i]));
                         fields.Add(modelFields);
@@ -166,7 +177,7 @@ namespace Watches
                 _lib.SaveFieldsToFile(br.brand, fields);
                 sw.Stop();
                 new EyeApi().SpreadMessage(
-                    $"{br.brand} done.{Environment.NewLine}Time elapsed: {sw.Elapsed}.{Environment.NewLine}Count: {donecounter}");
+                    $"{br.brand.Trim()} done.{Environment.NewLine}Time elapsed: {sw.Elapsed}.{Environment.NewLine}Count: {donecounter}");
                 Console.WriteLine($"{br.brand} saved. Time: {sw.Elapsed}. Count: {donecounter}");
                 await Task.Delay(_tools.GenRndDelay(500, 800));
             }
