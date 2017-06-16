@@ -38,7 +38,7 @@ namespace EyeOfTheUniverseService
             {
                 if (_NewGod.flag) throw new Exception("Gods overflow");
                 var id = e.Message.Chat.Id;
-                _api.SendMessage(e.Message.Chat.Id, "Give me your name, bro!");
+                _api.SendMessageAsync(e.Message.Chat.Id, "Give me your name, bro!");
                 _NewGod.id = id;
                 _NewGod.flag = true;
                 return;
@@ -49,7 +49,7 @@ namespace EyeOfTheUniverseService
                 _NewGod.name = e.Message.Text;
 
                 _api.AddNewGod(_NewGod);
-                _api.SendMessage(_NewGod.id, "My regards.");
+                _api.SendMessageAsync(_NewGod.id, "My regards.");
 
                 _NewGod = (0, string.Empty, false);
                 return;
@@ -58,7 +58,7 @@ namespace EyeOfTheUniverseService
             // YOU HAVE TO BE GOD NOW!
             if (!_api.GetGods().Select(god => god.ID).ToList().Contains(e.Message.Chat.Id))
             {
-                _api.SendMessage(e.Message.Chat.Id, "Sry, but you are not a God.");
+                _api.SendMessageAsync(e.Message.Chat.Id, "Sry, but you are not a God.");
                 return;
             }
 
@@ -66,7 +66,7 @@ namespace EyeOfTheUniverseService
             {
                 var id = e.Message.Chat.Id;
                 _api.RemoveGod(id);
-                _api.SendMessage(id, "You are no longer in Gods party.");
+                _api.SendMessageAsync(id, "You are no longer in Gods party.");
                 return;
             }
 
@@ -75,7 +75,7 @@ namespace EyeOfTheUniverseService
                 var gods = _api.GetGods();
                 var msg = $"Count: {gods.Count}{Environment.NewLine}";
                 msg += gods.Select(god => $"{god.Name}{Environment.NewLine}").Aggregate((acc, god) => acc += god);
-                _api.SendMessage(e.Message.Chat.Id, msg);
+                _api.SendMessageAsync(e.Message.Chat.Id, msg);
                 return;
             }
         }

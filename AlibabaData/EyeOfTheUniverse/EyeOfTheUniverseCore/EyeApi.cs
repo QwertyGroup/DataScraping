@@ -38,10 +38,10 @@ namespace EyeOfTheUniverseCore
             var chats = _lib.GetAllChats();
             if (chats == null) return;
             foreach (var chat in chats)
-                SendMessage(chat.ID, msg);
+                SendMessageAsync(chat.ID, msg);
         }
 
-        public async void SendMessage(long chatId, string msg)
+        public async void SendMessageAsync(long chatId, string msg)
         {
             await _tbot.SendTextMessageAsync(chatId, msg);
         }
