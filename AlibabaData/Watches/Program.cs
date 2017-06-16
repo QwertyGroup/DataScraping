@@ -10,6 +10,7 @@ using HtmlAgilityPack;
 using System.Net.Http;
 using BigDataCore;
 using EyeOfTheUniverseCore;
+using System.Diagnostics;
 
 namespace Watches
 {
@@ -52,9 +53,6 @@ namespace Watches
 
         private async void Test()
         {
-            // //*[@id=\"anti-flicker\"]/div[6]/div[1]/section[2]/div/div[1]/div[1]/table/tbody[1]/tr[1]
-            // //*[@id=\"anti-flicker\"]///section[2]/div/div[1]/div[1]/table/tr
-            // //*[@id=\"anti-flicker\"]/div[6]/div[1]/section[2]/div/div[1]/div[1]/table
             var doc = await _tools.DownloadDocAsync("http://www.chrono24.com/armani/ceramica--id6411296.htm");
             var nodes = _tools.GetXPathNodes(doc, "//tr");
             foreach (var node in nodes)
@@ -69,9 +67,12 @@ namespace Watches
         {
             var links = _lib.LoadLinksFromFiles();
             foreach (var br in links)
-            //var br = links.First(); // Testing
+            //var br = links[1]; // Testing
             {
+                var alreadyloaded = _lib.GetFilesFromDirectory(StrongholdLibrarian.FileName.NameWithoutExtension, "Data/");
+                if (alreadyloaded.Contains(br.brand)) continue;
                 Console.WriteLine($"{br.brand} Starting...");
+                var sw = new Stopwatch(); sw.Start();
 
                 var donecounter = 0;
                 var fields = new List<List<(string key, string val)>>();
@@ -79,7 +80,8 @@ namespace Watches
                 {
                     var linksChunk = new List<string>();
                     var modelsChunk = new List<string>();
-                    for (int i = 0; i < _rnd.Next(2) + 2; i++)
+                    for (int i = 0; i < 1; i++)
+                    //for (int i = 0; i < _rnd.Next(2) + 2; i++)
                     {
                         if (br.model_link.Any())
                         {
@@ -93,7 +95,7 @@ namespace Watches
                     var nodesResult = new List<HtmlNodeCollection>();
                     try
                     {
-                        var docs = await _tools.DownloadMultipleDocsAsync(linksChunk, _tools.GenRndDelay(100, 150));
+                        var docs = await _tools.DownloadMultipleDocsAsync(linksChunk, _tools.GenRndDelay(60, 120));
                         for (int i = 0; i < docs.Count; i++)
                             if (docs[i] == null)
                             {
@@ -150,15 +152,22 @@ namespace Watches
                         modelFields.Insert(1, ("Model", model));
                         modelFields.Insert(0, ("Link", linksChunk[i]));
                         fields.Add(modelFields);
+                        if (donecounter % 50 == 0)
+                        {
+                            _lib.SaveFieldsToFile(br.brand, fields);
+                            fields.Clear();
+                        }
                     }
 
                     donecounter += linksChunk.Count;
-                    await Task.Delay(_tools.GenRndDelay(220, 320));
+                    //await Task.Delay(_tools.GenRndDelay(220, 320));
                     Console.WriteLine($"{donecounter} done. {br.model_link.Count} left.");
                 }
                 _lib.SaveFieldsToFile(br.brand, fields);
-                new EyeApi().SpreadMessage($"{br.brand} done.");
-                Console.WriteLine($"{br.brand} saved.");
+                sw.Stop();
+                new EyeApi().SpreadMessage(
+                    $"{br.brand} done.{Environment.NewLine}Time elapsed: {sw.Elapsed}.{Environment.NewLine}Count: {donecounter}");
+                Console.WriteLine($"{br.brand} saved. Time: {sw.Elapsed}. Count: {donecounter}");
                 await Task.Delay(_tools.GenRndDelay(500, 800));
             }
         }

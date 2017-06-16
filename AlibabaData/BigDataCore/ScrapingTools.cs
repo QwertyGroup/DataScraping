@@ -70,8 +70,8 @@ namespace BigDataCore
                 var counter = 0;
                 foreach (var url in _urls)
                 {
-                    DownloadDoc(url, counter);
                     if (sleep_ms != 0) await Task.Delay(sleep_ms);
+                    DownloadDoc(url, counter);
                     counter++;
                 }
                 await new AThingThatFreezesTask(this, _urls.Count).Freeze();
@@ -83,6 +83,8 @@ namespace BigDataCore
             private async void DownloadDoc(string url, int key)
             {
                 var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("User-Agent",
+                    "Mozilla/5.0 (Android 7.0; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0");
                 var page = string.Empty;
                 try
                 {

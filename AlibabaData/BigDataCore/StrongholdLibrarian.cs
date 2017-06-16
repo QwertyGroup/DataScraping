@@ -95,6 +95,7 @@ namespace BigDataCore
         public void SaveFieldsToFile(string brand, List<List<(string field, string value)>> models)
         {
             var dir = $"{RootDirectory}/Data/".CheckDirectory();
+            var path = $"{dir}{brand}.txt";
             var tosave = new List<string>();
             var counter = 0;
             foreach (var model in models)
@@ -104,8 +105,19 @@ namespace BigDataCore
                 foreach (var line in model)
                     tosave.Add($"{line.field} -> {line.value}");
             }
-            File.WriteAllLines($"{dir}{brand}.txt", tosave);
-            File.AppendAllLines($"{dir}{brand}.txt", new[] { new string('*', 32), $"Count :{counter}" });
+            if (!File.Exists(path))
+                File.WriteAllLines(path, tosave);
+            else
+            {
+                var lines = File.ReadAllLines(path).ToList();
+                lines.RemoveRange(lines.IndexOf(new string('*', 32)), lines.Count - lines.IndexOf(new string('*', 32)));
+                lines.AddRange(tosave);
+                counter = 0;
+                foreach (var line in lines) if (line == new string('-', 32)) counter++;
+                File.WriteAllLines(path, lines);
+            }
+
+            File.AppendAllLines(path, new[] { new string('*', 32), $"Count: {counter}" });
         }
 
         public void LoadDataFromFiles()
@@ -143,7 +155,7 @@ namespace BigDataCore
         {
             fname = RootDirectory + pathfromRoot + fname;
             var lines = File.ReadAllLines(fname).ToList();
-            lines.AddRange(info.Select(item => $"{item.field} := {item.data}"));
+            lines.AddRange(info.Select(item => $"{item.field}: {item.data}"));
             File.WriteAllLines(fname, lines);
         }
 
@@ -160,7 +172,7 @@ namespace BigDataCore
             }).ToList();
         }
 
-        public enum FileName { FullPath, Name }
+        public enum FileName { FullPath, Name, NameWithoutExtension }
         public List<string> GetFilesFromDirectory(FileName fn, string pathfromRoot = "")
         {
             pathfromRoot = RootDirectory + pathfromRoot;
@@ -171,6 +183,9 @@ namespace BigDataCore
 
             if (fn == FileName.Name)
                 return files.Select(file => Path.GetFileName(file)).ToList();
+
+            if (fn == FileName.NameWithoutExtension)
+                return files.Select(file => Path.GetFileNameWithoutExtension(file)).ToList();
 
             return null;
         }
