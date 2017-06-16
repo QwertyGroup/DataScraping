@@ -26,8 +26,8 @@ namespace BigDataCore
          >As+.Gk}2¤|;,Ek;>N,xbZU  ->  @«^e&&¬B<Uf(l£{&@!v>g$=bj       | field -> value     |
                                                                       | space              |
          ********************************                             | new string('*',32) | *Stop parse data here*
-         Models := 2                                                  | field := data      |  
-         Unique fields := 10                                          | field := data      |
+         Models : 2                                                   | field : data       |  
+         Unique fields : 10                                           | field : data       |
          And other useful data
 
         ****************************************END*******************************************/
@@ -47,8 +47,8 @@ namespace BigDataCore
          >As+.Gk}2¤|;,Ek;>N,xbZU  ->  @«^e&&¬B<Uf(l£{&@!v>g$=bj       | model -> link      |
 
          ********************************                             | new string('*',32) | *Stop parse data here*
-         Models := 2                                                  | field := data      |  
-         Unique fields := 10                                          | field := data      |
+         Models : 2                                                   | field : data       |  
+         Unique fields : 10                                           | field : data       |
          And other useful data
 
         ****************************************END*******************************************/
@@ -92,10 +92,20 @@ namespace BigDataCore
             return loadedData;
         }
 
-        public void SaveFieldsToFile()
+        public void SaveFieldsToFile(string brand, List<List<(string field, string value)>> models)
         {
-            var dir = $"{RootDirectory}/Data/";
-            throw new NotImplementedException();
+            var dir = $"{RootDirectory}/Data/".CheckDirectory();
+            var tosave = new List<string>();
+            var counter = 0;
+            foreach (var model in models)
+            {
+                tosave.Add(new string('-', 32));
+                counter++;
+                foreach (var line in model)
+                    tosave.Add($"{line.field} -> {line.value}");
+            }
+            File.WriteAllLines($"{dir}{brand}.txt", tosave);
+            File.AppendAllLines($"{dir}{brand}.txt", new[] { new string('*', 32), $"Count :{counter}" });
         }
 
         public void LoadDataFromFiles()
@@ -145,7 +155,7 @@ namespace BigDataCore
             lines.RemoveRange(0, startindex + 1);
             return lines.Select(line =>
             {
-                var spl = line.SplitByAndTrim(":"); // ":=" !!!!!! FIX LATER
+                var spl = line.SplitByAndTrim(":");
                 return (spl[0], spl[1]);
             }).ToList();
         }

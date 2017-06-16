@@ -9,6 +9,7 @@ using System.Threading;
 using HtmlAgilityPack;
 using System.Net.Http;
 using BigDataCore;
+using EyeOfTheUniverseCore;
 
 namespace Watches
 {
@@ -35,6 +36,131 @@ namespace Watches
             //GatherLinks();
 
             //CountWatches();
+
+            try
+            {
+                LoadWatches();
+            }
+            catch (Exception ex)
+            {
+                new EyeApi().SpreadMessage(ex.Message);
+                throw;
+            }
+
+            //Test();
+        }
+
+        private async void Test()
+        {
+            // //*[@id=\"anti-flicker\"]/div[6]/div[1]/section[2]/div/div[1]/div[1]/table/tbody[1]/tr[1]
+            // //*[@id=\"anti-flicker\"]///section[2]/div/div[1]/div[1]/table/tr
+            // //*[@id=\"anti-flicker\"]/div[6]/div[1]/section[2]/div/div[1]/div[1]/table
+            var doc = await _tools.DownloadDocAsync("http://www.chrono24.com/armani/ceramica--id6411296.htm");
+            var nodes = _tools.GetXPathNodes(doc, "//tr");
+            foreach (var node in nodes)
+            {
+                var kek = node.SelectSingleNode("./td[1]"); //.Select(nd => nd.InnerText).ToList();
+                var zeg = node.SelectSingleNode("./td[2]"); //.Select(nd => nd.InnerText).ToList();
+            }
+
+        }
+
+        private async void LoadWatches()
+        {
+            var links = _lib.LoadLinksFromFiles();
+            foreach (var br in links)
+            //var br = links.First(); // Testing
+            {
+                Console.WriteLine($"{br.brand} Starting...");
+
+                var donecounter = 0;
+                var fields = new List<List<(string key, string val)>>();
+                while (br.model_link.Any())
+                {
+                    var linksChunk = new List<string>();
+                    var modelsChunk = new List<string>();
+                    for (int i = 0; i < _rnd.Next(2) + 2; i++)
+                    {
+                        if (br.model_link.Any())
+                        {
+                            linksChunk.Add(br.model_link.First().link);
+                            modelsChunk.Add(br.model_link.First().model);
+                            br.model_link.RemoveAt(0);
+                        }
+                        else break;
+                    }
+
+                    var nodesResult = new List<HtmlNodeCollection>();
+                    try
+                    {
+                        var docs = await _tools.DownloadMultipleDocsAsync(linksChunk, _tools.GenRndDelay(100, 150));
+                        for (int i = 0; i < docs.Count; i++)
+                            if (docs[i] == null)
+                            {
+                                docs.RemoveAt(i);
+                                linksChunk.RemoveAt(i);
+                                modelsChunk.RemoveAt(i);
+                                i--;
+                            }
+                        nodesResult = docs.Select(doc => _tools.GetXPathNodes(doc, "//tr")).ToList();
+                    }
+                    catch (Exception ex)
+                    {
+                        await new EyeApi().SpreadMessageAsync(ex.Message);
+                        throw;
+                    }
+
+                    // for each received page
+                    for (int i = 0; i < nodesResult.Count; i++)
+                    {
+                        var model = modelsChunk[i];
+                        var nodes = nodesResult[i];
+
+                        var basicinfopassed = false;
+                        var modelFields = new List<(string key, string val)>();
+                        foreach (var node in nodes)
+                        {
+                            var left = node.SelectSingleNode("./td[1]");
+                            var right = node.SelectSingleNode("./td[2]");
+                            if (left != null && right != null)
+                            {
+                                var lstr = left.InnerText.Trim();
+                                var rstr = right.InnerText.Trim();
+
+                                if (!basicinfopassed && lstr.Contains("Brand"))
+                                    basicinfopassed ^= true;
+
+                                if (basicinfopassed)
+                                {
+                                    if (lstr == string.Empty)
+                                    {
+                                        var curval = $"{modelFields.Last().val}; {rstr}";
+                                        var curkey = modelFields.Last().key;
+                                        modelFields.RemoveAt(modelFields.Count - 1);
+                                        modelFields.Add((curkey, curval));
+                                        continue;
+                                    }
+
+                                    if (rstr.Contains("\r\n")) rstr = rstr.Substring(0, rstr.IndexOf("\r\n"));
+                                    modelFields.Add((lstr, rstr));
+                                }
+                            }
+                        }
+
+                        modelFields.Insert(1, ("Model", model));
+                        modelFields.Insert(0, ("Link", linksChunk[i]));
+                        fields.Add(modelFields);
+                    }
+
+                    donecounter += linksChunk.Count;
+                    await Task.Delay(_tools.GenRndDelay(220, 320));
+                    Console.WriteLine($"{donecounter} done. {br.model_link.Count} left.");
+                }
+                _lib.SaveFieldsToFile(br.brand, fields);
+                new EyeApi().SpreadMessage($"{br.brand} done.");
+                Console.WriteLine($"{br.brand} saved.");
+                await Task.Delay(_tools.GenRndDelay(500, 800));
+            }
         }
 
         private void CountWatches()

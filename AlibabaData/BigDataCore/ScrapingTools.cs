@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Net;
 
 using HtmlAgilityPack;
+using EyeOfTheUniverseCore;
 
 namespace BigDataCore
 {
@@ -82,7 +83,19 @@ namespace BigDataCore
             private async void DownloadDoc(string url, int key)
             {
                 var client = new HttpClient();
-                string page = await client.GetStringAsync(url);
+                var page = string.Empty;
+                try
+                {
+                    page = await client.GetStringAsync(url);
+                }
+                catch (Exception ex)
+                {
+                    await new EyeApi().SpreadMessageAsync(ex.Message + Environment.NewLine + url);
+                    if (ex.Message.Contains("403")) throw ex;
+                    _docs[key] = null;
+                    OnDocLoaded?.Invoke(this, url);
+                    return;
+                }
                 page = WebUtility.HtmlDecode(page);
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(page);

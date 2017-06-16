@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-
+using System.Threading.Tasks;
 using Telegram.Bot;
 
 namespace EyeOfTheUniverseCore
@@ -33,15 +33,25 @@ namespace EyeOfTheUniverseCore
             _tbot.StopReceiving();
         }
 
-        public void SpreadMessage(string msg)
+        public async Task SpreadMessageAsync(string msg)
         {
             var chats = _lib.GetAllChats();
             if (chats == null) return;
             foreach (var chat in chats)
-                SendMessageAsync(chat.ID, msg);
+                await SendMessageAsync(chat.ID, msg);
         }
 
-        public async void SendMessageAsync(long chatId, string msg)
+        public async void SpreadMessage(string msg)
+        {
+            await SpreadMessageAsync(msg);
+        }
+
+        public async void SendMessage(long chatId, string msg)
+        {
+            await SendMessageAsync(chatId, msg);
+        }
+
+        public async Task SendMessageAsync(long chatId, string msg)
         {
             await _tbot.SendTextMessageAsync(chatId, msg);
         }

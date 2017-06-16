@@ -42,7 +42,7 @@ namespace CoreTesting
         public override void Main()
         {
             _eye = new EyeApi();
-            _eye.SpreadMessage("Some debug info.");
+            _eye.SpreadMessageAsync("Some debug info.");
         }
     }
 
