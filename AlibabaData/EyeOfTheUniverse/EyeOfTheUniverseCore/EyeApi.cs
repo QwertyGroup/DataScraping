@@ -35,10 +35,33 @@ namespace EyeOfTheUniverseCore
 
         public async Task SpreadMessageAsync(string msg)
         {
-            var chats = _lib.GetAllChats();
+            var chats = new List<(string Name, long ID)>();
+            while (true)
+            {
+                try
+                {
+                    chats = _lib.GetAllChats();
+                    break;
+                }
+                catch
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                }
+            }
             if (chats == null) return;
             foreach (var chat in chats)
-                await SendMessageAsync(chat.ID, msg);
+                while (true)
+                {
+                    try
+                    {
+                        await SendMessageAsync(chat.ID, msg);
+                        break;
+                    }
+                    catch
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(1));
+                    }
+                }
         }
 
         public async void SpreadMessage(string msg)

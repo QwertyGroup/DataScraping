@@ -11,6 +11,7 @@ using System.Net.Http;
 using BigDataCore;
 using EyeOfTheUniverseCore;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Watches
 {
@@ -28,16 +29,194 @@ namespace Watches
         private Random _rnd = new Random();
         private StrongholdLibrarian _lib = new StrongholdLibrarian();
         private ScrapingTools _tools = new ScrapingTools();
+        private BloodyButcher _parser = new BloodyButcher();
 
-        public async void Start()
+        public void Start()
         {
             //Lower();
             //Merge();
 
             //GatherLinks();
+            //FindMutedBrands();
 
             //CountWatches();
 
+            //Test();
+
+            //StartLoading();
+
+            //RetemplateMarkData();
+
+            //Resave();
+
+            //SaveCSV();
+
+            //FindTabs();
+
+            ReparseModels();
+        }
+
+        private void ReparseModels()
+        {
+            var linesIn = _lib.ReadFile("ForReprocessing.txt", "CSV/");
+            var linesOut = new List<string>();
+            var counter = 0;
+            foreach (var line in linesIn)
+            {
+                var parsedLine = line.Split('\t').ToList();
+                var modelIn = parsedLine[2];
+                var modelOut = SplitModelS(modelIn);
+                parsedLine[2] = modelOut;
+
+                var acc = string.Empty;
+                var lc = 1;
+                foreach (var part in parsedLine)
+                    if (lc != parsedLine.Count)
+                    {
+                        acc += $"{part}\t";
+                        lc++;
+                    }
+                    else
+                    {
+                        acc += part;
+                        lc = 1;
+                    }
+
+                //if (new Regex("^[0-9]+$").IsMatch(parsedLine[3])
+                //    || parsedLine[3].Length == 0
+                //    || parsedLine[3] == "Price, $")
+                linesOut.Add(acc);
+                //var kkr = "s:f::k:::t".Split(':');
+
+                counter++;
+                if (counter % 2400 == 0)
+                    Console.WriteLine($"{counter} of {linesIn.Count}");
+            }
+
+            _lib.SaveFile("OUTKEK.txt", linesOut, "CSV/");
+
+            Console.WriteLine("All done.");
+        }
+
+        private string SplitModelS(string modelIn)
+        {
+            var modelOut = modelIn;
+
+            modelOut = FillWith(modelOut, new Regex("([0-9])+([A-Z])*(?![a-z])"), Filler.Space);
+            modelOut = FillWith(modelOut, new Regex("([A-Z]){2,}([0-9])+"), Filler.Space);
+            modelOut = FillWith(modelOut, new Regex("([A-Z])+([a-z]){1,4}([0-9])+"), Filler.Space);
+            modelOut = FillWith(modelOut, new Regex("([A-Z])([a-z]|'|-)+((?![0-9]))+"), Filler.Space);
+            modelOut = FillWith(modelOut, new Regex("([A-Z]{4,}(?![0-9]))"), Filler.Space);
+            modelOut = FillWith(modelOut, new Regex("([.]{3,})"), Filler.Empty);
+            modelOut = FillWith(modelOut, new Regex("([&])+"), Filler.Space);
+            modelOut = FillWith(modelOut, new Regex(@"([\s]{2,})"), Filler.Replace);
+
+            return modelOut.Trim();
+        }
+
+        private enum Filler { Space, Empty, Replace }
+        private static string FillWith(string modelIn, Regex rgx0, Filler filler)
+        {
+            var mchs = rgx0.Matches(modelIn).Cast<Match>().Select(match => match.Value).ToList();
+            foreach (var mtch in mchs)
+                switch (filler)
+                {
+                    case Filler.Space:
+                        modelIn = modelIn.Replace(mtch, $"{mtch} ");
+                        break;
+                    case Filler.Empty:
+                        modelIn = modelIn.Replace(mtch, string.Empty);
+                        break;
+                    case Filler.Replace:
+                        modelIn = modelIn.Replace(mtch, " ");
+                        break;
+                    default:
+                        break;
+                }
+            return modelIn;
+        }
+
+        private void FindTabs()
+        {
+            var files = _lib.GetFilesFromDirectory(StrongholdLibrarian.FileName.Name, "Data/");
+            foreach (var file in files)
+            {
+                var lines = _lib.ReadFile(file, "Data/");
+                foreach (var line in lines)
+                    if (line.Contains("\t"))
+                        Console.WriteLine(line);
+            }
+            Console.WriteLine("All scaned.");
+        }
+
+        private void FindMutedBrands()
+        {
+            var oldB = File.ReadAllLines("OldB.txt").ToList();
+            var newB = File.ReadAllLines("NewB.txt").ToList();
+            foreach (var b in newB)
+                if (!oldB.Contains(b)) Console.WriteLine(b);
+            Console.WriteLine("Done.");
+        }
+
+        private void SaveCSV()
+        {
+            try
+            {
+                var data = _lib.LoadDataFromFiles();
+                var csv = _parser.ToCSV(data);
+                _lib.SaveCSV("NEWNEW", csv);
+                Console.WriteLine("saved.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+        private void Resave()
+        {
+            var data = _lib.LoadDataFromFiles(); // fortis 1213
+            foreach (var d in data)
+            {
+                _lib.SaveFieldsToFile(d.brand, d.models);
+                Console.WriteLine($"{d.brand} done.");
+            };
+            Console.WriteLine("all done.");
+        }
+
+        private void RetemplateMarkData()
+        {
+            var files = _lib.GetFilesFromDirectory(StrongholdLibrarian.FileName.NameWithoutExtension, "MarkData/");
+            foreach (var file in files)
+            {
+                //var allfields = new List<List<(string key, string val)>>();
+                var lines = _lib.ReadFile($"{file}.txt", "MarkData/");
+                //var fields = new List<(string key, string val)>();
+                //foreach (var line in lines)
+                //{
+                //    if (line == new string('-', 16))
+                //    {
+                //        allfields.Add(fields);
+                //        fields = new List<(string key, string val)>();
+                //    }
+                //    if (line.Contains("->"))
+                //    {
+                //        var spl = line.SplitByAndTrim("->");
+                //        fields.Add((spl[0], spl[1]));
+                //    }
+                //}
+                //_lib.SaveFieldsToFile(file, allfields);
+                for (int i = 0; i < lines.Count; i++)
+                    if (lines[i] == new string('-', 16))
+                        lines[i] = new string('-', 32);
+                File.WriteAllLines($"RootDir/Data/{file}.txt", lines);
+                Console.WriteLine($"{file} done.");
+            }
+            Console.WriteLine("all done.");
+        }
+
+        private async void StartLoading()
+        {
             try
             {
                 LoadWatches();
@@ -47,8 +226,6 @@ namespace Watches
                 await new EyeApi().SpreadMessageAsync(ex.Message);
                 throw;
             }
-
-            //Test();
         }
 
         private async void Test()
@@ -73,19 +250,25 @@ namespace Watches
                 if (alreadyloaded.Contains(br.brand))
                     br.model_link.RemoveRange(0,
                         br.model_link.Select(ml => ml.link).ToList().IndexOf(_lib.GetLastLink(br.brand)) + 1);
+                if (br.model_link.Count == 0) continue;
 
                 Console.WriteLine($"{br.brand} Starting...");
                 new EyeApi().SpreadMessage($"Next on queue: {br.brand}.");
                 var sw = new Stopwatch(); sw.Start();
+                var startBrandsCount = br.model_link.Count;
 
                 var donecounter = 0;
+                var loadcounter = 0;
+                var savecounter = 0;
+                var loadsw = new Stopwatch();
                 var fields = new List<List<(string key, string val)>>();
+                loadsw.Start();
                 while (br.model_link.Any())
                 {
                     var linksChunk = new List<string>();
                     var modelsChunk = new List<string>();
-                    for (int i = 0; i < 1; i++)
-                    //for (int i = 0; i < _rnd.Next(2) + 2; i++)
+                    //for (int i = 0; i < 1; i++)
+                    for (int i = 0; i < _rnd.Next(3) + 4; i++)
                     {
                         if (br.model_link.Any())
                         {
@@ -99,7 +282,8 @@ namespace Watches
                     var nodesResult = new List<HtmlNodeCollection>();
                     try
                     {
-                        var docs = await _tools.DownloadMultipleDocsAsync(linksChunk, _tools.GenRndDelay(50, 90));
+                        //var docs = await _tools.DownloadMultipleDocsAsync(linksChunk, _tools.GenRndDelay(30, 50));
+                        var docs = await _tools.DownloadMultipleDocsAsync(linksChunk);
                         for (int i = 0; i < docs.Count; i++)
                             if (docs[i] == null)
                             {
@@ -155,30 +339,50 @@ namespace Watches
 
                         if (modelFields.Count == 0)
                         {
-                            await new EyeApi().SpreadMessageAsync(
-                                $"Not a watch page? {Environment.NewLine}{linksChunk.First()}");
+                            //await new EyeApi().SpreadMessageAsync(
+                            //    $"Not a watch page? {Environment.NewLine}{linksChunk.First()}");
                             continue;
                         }
 
                         modelFields.Insert(1, ("Model", model));
                         modelFields.Insert(0, ("Link", linksChunk[i]));
                         fields.Add(modelFields);
-                        if (donecounter % 50 == 0)
+                        if (savecounter >= 50)
                         {
                             _lib.SaveFieldsToFile(br.brand, fields);
                             fields.Clear();
+                            savecounter = 0;
                         }
                     }
 
                     donecounter += linksChunk.Count;
-                    //await Task.Delay(_tools.GenRndDelay(220, 320));
-                    Console.WriteLine($"{donecounter} done. {br.model_link.Count} left.");
+                    loadcounter += linksChunk.Count;
+                    savecounter += linksChunk.Count;
+
+                    if (loadcounter >= (int)Math.Round(startBrandsCount / 100d * (_rnd.Next(5) + 6)))
+                    {
+                        loadsw.Stop();
+                        new EyeApi().SpreadMessage($"{donecounter} of {startBrandsCount} done." +
+                            $"{Environment.NewLine}{br.model_link.Count} left." +
+                            $"{Environment.NewLine}Elapsed: {loadsw.Elapsed}");
+
+                        loadcounter = 0;
+                        loadsw.Reset();
+                        loadsw.Start();
+                    }
+
+                    //await Task.Delay(_tools.GenRndDelay(50, 60));
+                    Console.WriteLine($"{donecounter} done. {br.model_link.Count} left. Time: {DateTime.Now.Hour}:{DateTime.Now.Minute}:{DateTime.Now.Second}");
                 }
                 _lib.SaveFieldsToFile(br.brand, fields);
+
                 sw.Stop();
                 new EyeApi().SpreadMessage(
-                    $"{br.brand.Trim()} done.{Environment.NewLine}Time elapsed: {sw.Elapsed}.{Environment.NewLine}Count: {donecounter}");
+                    $"{br.brand.Trim()} done.{Environment.NewLine}Time elapsed: {sw.Elapsed}." +
+                    $"{Environment.NewLine}Count: {donecounter}" +
+                    $"{Environment.NewLine}{links.Select(link => link.brand).ToList().IndexOf(br.brand) + 1} of {links.Count}");
                 Console.WriteLine($"{br.brand} saved. Time: {sw.Elapsed}. Count: {donecounter}");
+
                 await Task.Delay(_tools.GenRndDelay(500, 800));
             }
         }
@@ -248,7 +452,7 @@ namespace Watches
                     pairs.AddRange(await GetLinkPairs(urls));
                     pagesCounter += counter;
                     Console.WriteLine(pagesCounter + " of " + maxpages);
-                    await Task.Delay(_tools.GenRndDelay(300, 400));
+                    //await Task.Delay(_tools.GenRndDelay(300, 400));
                 }
 
                 _lib.SaveLinksToFile(brandpair.fbrand, pairs);
@@ -261,6 +465,7 @@ namespace Watches
 
         private async Task<int> GetMaxPage(string url)
         {
+            // //*[@id="watches"]/div[2]/div[2]/ul/li
             var data = _tools.GetXPathNodesAndProcess(
                 await _tools.DownloadDocAsync(url), "//*[@id=\"watches\"]/div[2]/div[2]/ul/li").
                 Select(line => line.Replace(" ", string.Empty).Replace("\n", string.Empty)).ToList();
@@ -277,7 +482,7 @@ namespace Watches
 
         public async Task<List<(string model, string link)>> GetLinkPairs(List<string> urls)
         {
-            var docs = await _tools.DownloadMultipleDocsAsync(urls, _tools.GenRndDelay(100, 120));
+            var docs = await _tools.DownloadMultipleDocsAsync(urls);
             var pairs = new List<(string model, string link)>();
 
             foreach (var doc in docs)

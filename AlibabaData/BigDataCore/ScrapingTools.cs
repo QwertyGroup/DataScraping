@@ -40,7 +40,7 @@ namespace BigDataCore
             return processor(collection);
         }
 
-        public async Task<HtmlDocument> DownloadDocAsync(string url, int sleep_ms = 0)
+        public async Task<HtmlDocument> DownloadDocAsync(string url, int sleep_ms = 3)
         {
             var doc = (await DownloadMultipleDocsAsync(new List<string> { url }, sleep_ms)).First();
             if (sleep_ms != 0) await Task.Delay(sleep_ms);
@@ -63,8 +63,11 @@ namespace BigDataCore
                 _urls = urls;
                 for (int i = 0; i < _urls.Count; i++)
                     _docs.Add(i, null);
+
+                //OnDocLoaded += (s, e) => alreadyLoaded++;
             }
 
+            private int alreadyLoaded = 0;
             public async Task<List<HtmlDocument>> DownloadDocsAsync(int sleep_ms = 0)
             {
                 var counter = 0;
@@ -74,7 +77,11 @@ namespace BigDataCore
                     DownloadDoc(url, counter);
                     counter++;
                 }
-                await new AThingThatFreezesTask(this, _urls.Count).Freeze();
+
+                //await new AThingThatFreezesTask(this, _urls.Count).Freeze(); // NOT rly working((
+                while (alreadyLoaded != _urls.Count) // Trying this
+                    await Task.Delay(TimeSpan.FromMilliseconds(20));
+
                 return _docs.Select(pair => pair.Value).ToList();
             }
 
@@ -84,31 +91,40 @@ namespace BigDataCore
             {
                 var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("User-Agent",
-                    "Mozilla/5.0 (Android 7.0; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0");
+                    "Mozilla/5.0 (Android 7.0; rv:41.0) Gecko/41.0 Firefox/41.0");
+                client.Timeout = TimeSpan.FromSeconds(40);
                 var page = string.Empty;
+                tryagain:
                 try
                 {
                     page = await client.GetStringAsync(url);
                 }
                 catch (Exception ex)
                 {
+                    if (ex.Message.Contains("A task was canceled")) // Timeout
+                    {
+                        await new EyeApi().SpreadMessageAsync("40 sec timeout. Trying again...");
+                        goto tryagain;
+                    }
+
                     if (!ex.Message.Contains("410")) // filter
                     {
                         if (ex.Message.Contains("403"))
                             await new EyeApi().SpreadMessageAsync("403" + Environment.NewLine + ex.Message + Environment.NewLine + url);
-                        else
-                            await new EyeApi().SpreadMessageAsync(ex.Message + Environment.NewLine + url);
+                        //else
+                        //    await new EyeApi().SpreadMessageAsync(ex.Message + Environment.NewLine + url);
                     }
                     if (ex.Message.Contains("403")) throw ex;
-                    _docs[key] = null;
-                    OnDocLoaded?.Invoke(this, url);
+                    //OnDocLoaded?.Invoke(this, url);
+                    alreadyLoaded++;
                     return;
                 }
                 page = WebUtility.HtmlDecode(page);
                 HtmlDocument doc = new HtmlDocument();
                 doc.LoadHtml(page);
                 _docs[key] = doc;
-                OnDocLoaded?.Invoke(this, url);
+                //OnDocLoaded?.Invoke(this, url);
+                alreadyLoaded++;
             }
 
             private class AThingThatFreezesTask
@@ -119,18 +135,40 @@ namespace BigDataCore
                 private AThingThatFreezesTask() { }
                 public AThingThatFreezesTask(DocsLoader dad, int maxCount)
                 {
+                    phosphor = new SemaphoreSlim(1, 1);
                     _maxCount = maxCount;
-                    dad.OnDocLoaded += (s, url) =>
+                    _currentCount = 0;
+                    var releasedTimes = 0;
+                    phosphor.Wait();
+                    dad.OnDocLoaded += async (s, url) =>
                     {
-                        _currentCount++;
-                        if (_currentCount == _maxCount) phosphor.Release();
+                        try
+                        {
+                            await Task.Delay(TimeSpan.FromMilliseconds(5));
+                            _currentCount++;
+                            //Console.WriteLine($"{_currentCount} of {maxCount} released");
+                            if (_currentCount == _maxCount)
+                            {
+                                releasedTimes++;
+                                if (releasedTimes == 1)
+                                {
+                                    Console.WriteLine("Released");
+                                    phosphor.Release();
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
                     };
+
+
                 }
 
                 private SemaphoreSlim phosphor;
                 public async Task Freeze()
                 {
-                    phosphor = new SemaphoreSlim(0, 1);
                     await phosphor.WaitAsync();
                 }
             }

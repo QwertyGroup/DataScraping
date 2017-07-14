@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,19 +12,19 @@ namespace BigDataCore
     {
         /* Data pattern: *****to**csv***********START*****************************************
         
-         --------------------------------                             | new string('-',32) |
          5mnK5K<:]tNjOeC_hljvo%¯  ->  fS[^7B|«t§QX'E8gw*­N*eIzuy       | field -> value     |
          5I lA¦9X¡_¡xp];dk6tNJ9®  ->  ~®\o4{okm_hZr*nztwPKN=[-£       | field -> value     |
          yX-SC«w!t3R'p}nkh;­lF8IE  ->  W,4OB¨9(a0pvhm\$j¡¦"7Qª¬}       | field -> value     |
          0!:`"¨¨v!!§)~8h>&Z0V¥Hk  ->  DJ)C£¨ZilU¦¯Yn{Xumye[qp¥x       | field -> value     |
          >As+.Gk}2¤|;,Ek;>N,xbZU  ->  @«^e&&¬B<Uf(l£{&@!v>g$=bj       | field -> value     |
-                                                                      | space              |
          --------------------------------                             | new string('-',32) |
+                                                                      | space              |
          D#WLjdD)0vO*h9>;("dBtdR  ->  fS[^7B|«t§QX'E8gw*­N*eI#b4       | field -> value     |
          yX-SC«w!t3R'p}nkh;­lF8IE  ->  W,4OB¨9(a0pvhm\$j¡¦"7Qª¬}       | field -> value     |
          5I lA¦9X¡_¡xp];dk6tNJCk  ->  \o4{okm_hZr*nztwPKN=Z^_f$       | field -> value     |
          0!:`"¨¨v!!§)~8h>&Z0V¥Hk  ->  DJ)C£¨ZilU¦¯Yn{Xu|N§ª¯;¦!       | field -> value     |
          >As+.Gk}2¤|;,Ek;>N,xbZU  ->  @«^e&&¬B<Uf(l£{&@!v>g$=bj       | field -> value     |
+         --------------------------------                             | new string('-',32) |
                                                                       | space              |
          ********************************                             | new string('*',32) | *Stop parse data here*
          Models : 2                                                   | field : data       |  
@@ -100,10 +101,10 @@ namespace BigDataCore
             var counter = 0;
             foreach (var model in models)
             {
-                tosave.Add(new string('-', 32));
                 counter++;
                 foreach (var line in model)
                     tosave.Add($"{line.field} -> {line.value}");
+                tosave.Add(new string('-', 32));
             }
             if (!File.Exists(path))
                 File.WriteAllLines(path, tosave);
@@ -120,10 +121,35 @@ namespace BigDataCore
             File.AppendAllLines(path, new[] { new string('*', 32), $"Count: {counter}" });
         }
 
-        public void LoadDataFromFiles()
+        public List<(string brand, List<List<(string field, string val)>> models)> LoadDataFromFiles()
         {
             var dir = $"{RootDirectory}/Data/";
-            throw new NotImplementedException();
+            var files = GetFilesFromDirectory(FileName.NameWithoutExtension, "Data/");
+            var data = new List<(string brand, List<List<(string field, string val)>>)>();
+            foreach (var file in files)
+            {
+                var lines = ReadFile($"{file}.txt", "Data/");
+                var allfields = new List<List<(string field, string val)>>();
+                var localfields = new List<(string field, string val)>();
+                foreach (var line in lines)
+                {
+                    if (line == new string('*', 32)) break;
+                    if (line == new string('-', 32))
+                    {
+                        allfields.Add(localfields);
+                        localfields = new List<(string field, string val)>();
+                    }
+
+                    if (line.Contains("->"))
+                    {
+                        var spl = line.SplitByAndTrim("->");
+                        localfields.Add((spl[0], spl[1]));
+                    }
+                }
+                data.Add((file, allfields));
+                Debug.WriteLine($"{file} loaded.");
+            }
+            return data;
         }
 
         public List<string> ReadFile(string name, string pathfromRoot = "")
@@ -133,7 +159,7 @@ namespace BigDataCore
 
         public void SaveFile(string name, List<string> data, string pathfromRoot = "")
         {
-            File.WriteAllLines((RootDirectory + pathfromRoot).CheckDirectory() + name, data);
+            File.WriteAllLines((RootDirectory + pathfromRoot).CheckDirectory() + name, data, Encoding.Unicode);
         }
 
         public void AppendFile(string name, List<string> data, string pathfromRoot = "")
@@ -216,6 +242,12 @@ namespace BigDataCore
                 if (spl[0] == "Link") links.Add(spl[1]);
             }
             return links.Last();
+        }
+
+        public void SaveCSV(string name, List<string> data, string pathfromcsv = "")
+        {
+            var dir = $"{RootDirectory}/CSV/{pathfromcsv}".CheckDirectory();
+            File.WriteAllLines($"{dir}{name}.csv", data, Encoding.Unicode);
         }
     }
 }
